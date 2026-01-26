@@ -22,21 +22,19 @@
             width: 100vw; height: 100vh; 
             overflow: auto; 
             display: block; 
-            cursor: grab;
+            cursor: default; /* Puntero normal por defecto */
             scroll-behavior: smooth;
         }
-        #viewport:active { cursor: grabbing; }
 
         #container { 
             position: relative; 
-            transform-origin: 0 0; /* Origen exacto para no descuadrar mesas */
+            transform-origin: 0 0; 
             transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
             display: inline-block;
         }
         
         img { 
             width: 10169px; height: auto; display: block; 
-            image-rendering: -webkit-optimize-contrast; 
             image-rendering: high-quality; 
         }
 
@@ -47,11 +45,12 @@
             box-sizing: border-box; 
             z-index: 10;
             border-radius: 4px;
+            cursor: pointer; /* Cambia a mano de click solo en las mesas */
         }
         .mesa.sport { border-color: var(--verde-sport); background: rgba(0, 255, 180, 0.25); }
         .mesa:hover { background: rgba(46, 204, 113, 0.7); border-color: #fff; box-shadow: 0 0 30px var(--verde-base); z-index: 100; }
         
-        /* Tooltip Aumentado (Masivo) */
+        /* Tooltip Masivo */
         .mesa::after {
             content: attr(data-info); 
             position: absolute; 
@@ -59,7 +58,7 @@
             transform: translateX(-50%) translateY(10px);
             background: #000; color: #fff; 
             padding: 20px 40px; border-radius: 14px; 
-            font-weight: 900; font-size: 45px; /* Tamaño masivo para legibilidad */
+            font-weight: 900; font-size: 45px;
             white-space: nowrap; opacity: 0; 
             pointer-events: none; transition: all 0.2s ease;
             box-shadow: 0 15px 45px rgba(0,0,0,0.6);
@@ -68,7 +67,7 @@
         }
         .mesa:hover::after { opacity: 1; transform: translateX(-50%) translateY(0); }
 
-        /* Controles de Navegación */
+        /* Controles */
         .controls-wrapper {
             position: fixed; bottom: 30px; right: 30px;
             display: flex; flex-direction: column; gap: 12px; z-index: 2000;
@@ -84,7 +83,6 @@
             width: 55px; height: 55px; border: none; background: #fff;
             border-radius: 12px; font-size: 22px; cursor: pointer;
             display: flex; align-items: center; justify-content: center;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
         }
         .nav-btn:hover { background: var(--verde-base); color: #fff; }
 
@@ -135,12 +133,11 @@
                 const html = await response.text();
                 document.getElementById('capa-mesas').innerHTML = html;
                 fit(); 
-            } catch (err) { console.error("Error cargando mesas:", err); }
+            } catch (err) { console.error("Error:", err); }
         }
 
         function zoom(f) { 
             let newScale = scale * f;
-            // Límites de zoom para evitar niveles "microscópicos"
             if (newScale >= 0.04 && newScale <= 2.2) {
                 scale = newScale;
                 container.style.transform = `scale(${scale})`; 
@@ -156,7 +153,6 @@
         }
 
         function fit() { 
-            // Ajuste para ver el ancho total del mapa al inicio
             scale = window.innerWidth / 10169; 
             container.style.transform = `scale(${scale})`;
             viewport.scrollTo(0,0);
@@ -164,23 +160,6 @@
 
         window.onload = cargarMesas;
         window.onresize = fit;
-
-        let isDown = false, startX, startY, scrollL, scrollT;
-        viewport.addEventListener('mousedown', (e) => {
-            isDown = true;
-            startX = e.pageX - viewport.offsetLeft;
-            startY = e.pageY - viewport.offsetTop;
-            scrollL = viewport.scrollLeft;
-            scrollT = viewport.scrollTop;
-        });
-        document.addEventListener('mouseup', () => isDown = false);
-        viewport.addEventListener('mousemove', (e) => {
-            if (!isDown) return;
-            const x = e.pageX - viewport.offsetLeft;
-            const y = e.pageY - viewport.offsetTop;
-            viewport.scrollLeft = scrollL - (x - startX) * 1.5;
-            viewport.scrollTop = scrollT - (y - startY) * 1.5;
-        });
     </script>
 </body>
 </html>
