@@ -2,7 +2,7 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>HALL 1 - Mapa Interactivo IFA</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700;900&display=swap" rel="stylesheet">
     
@@ -11,88 +11,107 @@
             --verde-base: #2ecc71;
             --verde-sport: #00ffb4;
             --fuente: 'Inter', sans-serif;
+            --glass: rgba(255, 255, 255, 0.85);
         }
 
         body, html { 
             margin: 0; padding: 0; width: 100%; height: 100%; 
-            overflow: hidden; background: #f0f0f0; font-family: var(--fuente); 
+            overflow: hidden; background: #e0e0e0; font-family: var(--fuente); 
         }
         
-        /* Contenedor Flex para centrado total del plano */
         #viewport { 
             width: 100vw; height: 100vh; 
             overflow: auto; 
             display: flex; 
             align-items: center; 
             justify-content: center; 
-            cursor: grab; 
+            cursor: grab;
+            scroll-behavior: smooth; /* Movimiento suave para las flechas */
         }
         #viewport:active { cursor: grabbing; }
+        #viewport::-webkit-scrollbar { display: none; }
 
         #container { 
             position: relative; 
             transform-origin: center center; 
-            transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            transition: transform 0.4s cubic-bezier(0.2, 1, 0.3, 1);
             display: inline-block;
         }
         
-        /* Forzado de nitidez máxima para planos grandes */
         img { 
             width: 10169px; height: auto; display: block; 
-            image-rendering: -webkit-optimize-contrast; 
             image-rendering: high-quality; 
         }
 
-        /* Estilos de las mesas con Outline sólido para cualquier fondo */
+        /* Mesas con bordes suaves */
         .mesa { 
             position: absolute; 
-            border: 1.5px solid var(--verde-base); 
-            background: rgba(46, 204, 113, 0.2); 
+            border: 2px solid var(--verde-base); 
+            background: rgba(46, 204, 113, 0.25); 
             box-sizing: border-box; 
-            z-index: 10; 
+            z-index: 10;
+            border-radius: 4px;
         }
-
-        /* Color diferenciado para Sport Cards */
-        .mesa.sport { 
-            border-color: var(--verde-sport); 
-            background: rgba(0, 255, 180, 0.2); 
-        }
-
-        .mesa:hover { 
-            background: rgba(46, 204, 113, 0.6); 
-            border-color: #fff; 
-            box-shadow: 0 0 25px var(--verde-base); 
-            z-index: 100; 
-        }
+        .mesa.sport { border-color: var(--verde-sport); background: rgba(0, 255, 180, 0.25); }
+        .mesa:hover { background: rgba(46, 204, 113, 0.6); border-color: #fff; box-shadow: 0 0 30px var(--verde-base); z-index: 100; }
         
-        /* Tooltip Gigante Legible */
+        /* Tooltip Ultra-Grande */
         .mesa::after {
             content: attr(data-info); 
             position: absolute; 
-            bottom: 140%; left: 50%; 
+            bottom: 150%; left: 50%; 
             transform: translateX(-50%) translateY(10px);
             background: #000; color: #fff; 
-            padding: 12px 24px; border-radius: 12px; 
-            font-weight: 800; font-size: 24px; 
+            padding: 16px 32px; border-radius: 14px; 
+            font-weight: 900; font-size: 32px; /* Tamaño aumentado */
             white-space: nowrap; opacity: 0; 
-            pointer-events: none; transition: all 0.2s ease;
-            box-shadow: 0 10px 40px rgba(0,0,0,0.5);
+            pointer-events: none; transition: all 0.3s cubic-bezier(0.18, 0.89, 0.32, 1.28);
+            box-shadow: 0 15px 45px rgba(0,0,0,0.6);
+            border: 2px solid var(--verde-base);
         }
         .mesa:hover::after { opacity: 1; transform: translateX(-50%) translateY(0); }
 
-        /* Controles de Navegación */
-        .controls { 
-            position: fixed; bottom: 30px; right: 30px; 
-            display: flex; flex-direction: column; gap: 10px; z-index: 1000; 
+        /* Interfaz de Control Dinámica */
+        .controls-wrapper {
+            position: fixed; bottom: 30px; right: 30px;
+            display: flex; flex-direction: column; align-items: center; gap: 15px; z-index: 1000;
         }
-        .btn { 
-            width: 55px; height: 55px; border-radius: 15px; 
-            border: 1px solid rgba(0,0,0,0.1); 
-            background: rgba(255,255,255,0.9); backdrop-filter: blur(10px); 
-            font-size: 24px; font-weight: bold; cursor: pointer; 
-            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+
+        /* Joystick de Flechas */
+        .joystick {
+            display: grid;
+            grid-template-columns: repeat(3, 50px);
+            grid-template-rows: repeat(3, 50px);
+            gap: 5px;
+            background: var(--glass); padding: 10px; border-radius: 20px;
+            backdrop-filter: blur(10px); box-shadow: 0 10px 30px rgba(0,0,0,0.1);
         }
-        .btn:hover { background: #fff; transform: scale(1.05); color: var(--verde-base); }
+
+        .nav-btn {
+            width: 50px; height: 50px; border: none; background: #fff;
+            border-radius: 12px; font-size: 20px; cursor: pointer;
+            display: flex; align-items: center; justify-content: center;
+            transition: 0.2s; box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+        }
+        .nav-btn:hover { background: var(--verde-base); color: #fff; }
+        .up { grid-column: 2; }
+        .left { grid-column: 1; grid-row: 2; }
+        .right { grid-column: 3; grid-row: 2; }
+        .down { grid-column: 2; grid-row: 3; }
+
+        /* Botones de Zoom */
+        .zoom-group {
+            display: flex; gap: 10px;
+            background: var(--glass); padding: 10px; border-radius: 20px;
+            backdrop-filter: blur(10px); box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+        }
+        .action-btn {
+            width: 60px; height: 60px; border-radius: 15px; border: none;
+            background: #fff; font-size: 24px; font-weight: bold; cursor: pointer;
+            transition: 0.2s;
+        }
+        .action-btn:hover { background: #111; color: #fff; }
+        .reset-text { font-size: 11px; text-transform: uppercase; font-weight: 900; }
     </style>
 </head>
 <body>
@@ -104,103 +123,84 @@
         </div>
     </div>
 
-    <div class="controls">
-        <button class="btn" onclick="zoom(1.5)" title="Aumentar">＋</button>
-        <button class="btn" onclick="zoom(0.6)" title="Reducir">－</button>
-        <button class="btn" onclick="fit()" style="font-size: 10px;">RESET</button>
+    <div class="controls-wrapper">
+        <div class="joystick">
+            <button class="nav-btn up" onclick="move('up')">↑</button>
+            <button class="nav-btn left" onclick="move('left')">←</button>
+            <button class="nav-btn right" onclick="move('right')">→</button>
+            <button class="nav-btn down" onclick="move('down')">↓</button>
+        </div>
+
+        <div class="zoom-group">
+            <button class="action-btn" onclick="zoom(1.4)">＋</button>
+            <button class="action-btn" onclick="zoom(0.7)">－</button>
+            <button class="action-btn reset-text" onclick="fit()">FIT</button>
+        </div>
     </div>
 
     <script>
-let scale = 1;
-    const container = document.getElementById('container');
-    const viewport = document.getElementById('viewport');
+        let scale = 1;
+        const container = document.getElementById('container');
+        const viewport = document.getElementById('viewport');
 
-    // Carga dinámica de mesas
-    async function cargarMesas() {
-        try {
-            const response = await fetch('mesas.html');
-            if (!response.ok) throw new Error('Error al cargar mesas.html');
-            const html = await response.text();
-            document.getElementById('capa-mesas').innerHTML = html;
-            fit(); 
-        } catch (err) {
-            console.error("Error cargando mesas:", err);
+        async function cargarMesas() {
+            try {
+                const response = await fetch('mesas.html');
+                const html = await response.text();
+                document.getElementById('capa-mesas').innerHTML = html;
+                fit(); 
+            } catch (err) { console.error("Error cargando mesas:", err); }
         }
-    }
 
-    // Zoom nítido
-    function zoom(f) { 
-        scale *= f; 
-        scale = Math.max(0.05, Math.min(scale, 4)); 
-        container.style.transform = `scale(${scale})`; 
-    }
+        // ZOOM CONTROLADO: Límite min 0.05 y máx 2.5 (Evita el nivel microscópico)
+        function zoom(f) { 
+            let newScale = scale * f;
+            if (newScale >= 0.05 && newScale <= 2.5) {
+                scale = newScale;
+                container.style.transform = `scale(${scale})`; 
+            }
+        }
 
-    // Ajuste inicial centrado
-    function fit() { 
-        scale = Math.min(window.innerWidth / 10169, window.innerHeight / 5400); 
-        container.style.transform = `scale(${scale})`;
-        viewport.scrollTo({
-            top: (container.offsetHeight * scale / 2) - (viewport.clientHeight / 2),
-            left: (container.offsetWidth * scale / 2) - (viewport.clientWidth / 2),
-            behavior: 'smooth'
+        // FLECHAS DINÁMICAS: Desplazamiento suave
+        function move(dir) {
+            const step = 300; // Píxeles por click
+            if(dir === 'up') viewport.scrollTop -= step;
+            if(dir === 'down') viewport.scrollTop += step;
+            if(dir === 'left') viewport.scrollLeft -= step;
+            if(dir === 'right') viewport.scrollLeft += step;
+        }
+
+        function fit() { 
+            scale = Math.min(window.innerWidth / 10169, window.innerHeight / 5400); 
+            container.style.transform = `scale(${scale})`;
+            viewport.scrollTo({
+                top: (container.offsetHeight * scale / 2) - (viewport.clientHeight / 2),
+                left: (container.offsetWidth * scale / 2) - (viewport.clientWidth / 2),
+                behavior: 'smooth'
+            });
+        }
+
+        window.onload = cargarMesas;
+        window.onresize = fit;
+
+        // Arrastre mejorado
+        let isDown = false, startX, startY, scrollLeft, scrollTop;
+        viewport.addEventListener('mousedown', (e) => {
+            isDown = true;
+            startX = e.pageX - viewport.offsetLeft;
+            startY = e.pageY - viewport.offsetTop;
+            scrollLeft = viewport.scrollLeft;
+            scrollTop = viewport.scrollTop;
         });
-    }
-
-    window.onload = cargarMesas;
-    window.onresize = fit;
-
-    // --- MEJORA DE ARRASTRE (DRAG & SCROLL) ---
-    let isDown = false;
-    let startX, startY, scrollLeft, scrollTop;
-
-    // Soporte para Ratón
-    viewport.addEventListener('mousedown', (e) => {
-        isDown = true;
-        viewport.classList.add('active');
-        startX = e.pageX - viewport.offsetLeft;
-        startY = e.pageY - viewport.offsetTop;
-        scrollLeft = viewport.scrollLeft;
-        scrollTop = viewport.scrollTop;
-    });
-
-    const endDrag = () => {
-        isDown = false;
-        viewport.classList.remove('active');
-    };
-
-    viewport.addEventListener('mouseleave', endDrag);
-    viewport.addEventListener('mouseup', endDrag);
-
-    viewport.addEventListener('mousemove', (e) => {
-        if (!isDown) return;
-        e.preventDefault();
-        const x = e.pageX - viewport.offsetLeft;
-        const y = e.pageY - viewport.offsetTop;
-        // Multiplicador 1.5 para que el mapa "siga" al ratón con más agilidad
-        const walkX = (x - startX) * 1.5; 
-        const walkY = (y - startY) * 1.5;
-        viewport.scrollLeft = scrollLeft - walkX;
-        viewport.scrollTop = scrollTop - walkY;
-    });
-
-    // Soporte Táctil (Móviles) mejorado
-    viewport.addEventListener('touchstart', (e) => {
-        isDown = true;
-        startX = e.touches[0].pageX - viewport.offsetLeft;
-        startY = e.touches[0].pageY - viewport.offsetTop;
-        scrollLeft = viewport.scrollLeft;
-        scrollTop = viewport.scrollTop;
-    }, {passive: true});
-
-    viewport.addEventListener('touchmove', (e) => {
-        if (!isDown) return;
-        const x = e.touches[0].pageX - viewport.offsetLeft;
-        const y = e.touches[0].pageY - viewport.offsetTop;
-        viewport.scrollLeft = scrollLeft - (x - startX);
-        viewport.scrollTop = scrollTop - (y - startY);
-    }, {passive: true});
-
-    viewport.addEventListener('touchend', endDrag);
+        document.addEventListener('mouseup', () => isDown = false);
+        viewport.addEventListener('mousemove', (e) => {
+            if (!isDown) return;
+            e.preventDefault();
+            const x = e.pageX - viewport.offsetLeft;
+            const y = e.pageY - viewport.offsetTop;
+            viewport.scrollLeft = scrollLeft - (x - startX) * 1.5;
+            viewport.scrollTop = scrollTop - (y - startY) * 1.5;
+        });
     </script>
 </body>
 </html>
