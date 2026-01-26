@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>HALL 1 - Interactive Map IFA</title>
+    <title>HALL 1 - Mapa Interactivo IFA</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700;900&display=swap" rel="stylesheet">
     
     <style>
@@ -11,183 +11,176 @@
             --verde-base: #2ecc71;
             --verde-sport: #00ffb4;
             --fuente: 'Inter', sans-serif;
-            --bg-page: #1a1a1a; 
         }
 
         body, html { 
             margin: 0; padding: 0; width: 100%; height: 100%; 
-            overflow: hidden; background: var(--bg-page); font-family: var(--fuente); 
-        }
-
-        .master-wrapper {
-            padding: 10px;
-            height: calc(100vh - 20px);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
-
-        .map-frame {
-            width: 100%;
-            height: 100%;
-            background: #fff;
-            border-radius: 20px;
-            overflow: hidden;
-            position: relative;
-            box-shadow: 0 20px 60px rgba(0,0,0,0.5);
+            overflow: hidden; background: #f0f0f0; font-family: var(--fuente); 
         }
         
         #viewport { 
-            width: 100%; height: 100%; 
+            width: 100vw; height: 100vh; 
             overflow: auto; 
-            background: #e0e0e0;
+            display: block; 
             cursor: grab;
+            scroll-behavior: smooth;
         }
         #viewport:active { cursor: grabbing; }
 
-        /* EL TRUCO PARA NO DESCUADRAR: */
-        /* Eliminamos el Flexbox interno y usamos coordenadas desde el top-left (0,0) */
         #container { 
             position: relative; 
-            transform-origin: 0 0; /* IMPORTANTE: Las mesas dependen de que el origen sea 0,0 */
-            transition: transform 0.3s ease-out;
-            display: block;
-            margin: 500px; /* Esto da espacio para que puedas subir y ver la parte de arriba */
+            transform-origin: 0 0; /* Origen exacto para no descuadrar mesas */
+            transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            display: inline-block;
         }
         
         img { 
             width: 10169px; height: auto; display: block; 
+            image-rendering: -webkit-optimize-contrast; 
             image-rendering: high-quality; 
         }
 
-        /* Tus mesas (Sin cambios para no romper coordenadas) */
         .mesa { 
             position: absolute; 
             border: 2px solid var(--verde-base); 
-            background: rgba(46, 204, 113, 0.3); 
+            background: rgba(46, 204, 113, 0.25); 
             box-sizing: border-box; 
             z-index: 10;
+            border-radius: 4px;
         }
-        .mesa.sport { border-color: var(--verde-sport); background: rgba(0, 255, 180, 0.3); }
-        .mesa:hover { background: rgba(46, 204, 113, 0.7); border-color: #fff; z-index: 100; }
+        .mesa.sport { border-color: var(--verde-sport); background: rgba(0, 255, 180, 0.25); }
+        .mesa:hover { background: rgba(46, 204, 113, 0.7); border-color: #fff; box-shadow: 0 0 30px var(--verde-base); z-index: 100; }
         
-        /* Tooltip Gigante */
+        /* Tooltip Aumentado (Masivo) */
         .mesa::after {
             content: attr(data-info); 
             position: absolute; 
-            bottom: 140%; left: 50%; 
-            transform: translateX(-50%);
+            bottom: 150%; left: 50%; 
+            transform: translateX(-50%) translateY(10px);
             background: #000; color: #fff; 
-            padding: 20px 40px; border-radius: 15px; 
-            font-weight: 900; font-size: 50px; /* Súper grande como pediste */
+            padding: 20px 40px; border-radius: 14px; 
+            font-weight: 900; font-size: 45px; /* Tamaño masivo para legibilidad */
             white-space: nowrap; opacity: 0; 
-            pointer-events: none; transition: opacity 0.2s;
-            z-index: 1000;
+            pointer-events: none; transition: all 0.2s ease;
+            box-shadow: 0 15px 45px rgba(0,0,0,0.6);
             border: 3px solid var(--verde-base);
+            z-index: 1000;
         }
-        .mesa:hover::after { opacity: 1; }
+        .mesa:hover::after { opacity: 1; transform: translateX(-50%) translateY(0); }
 
-        /* Controles */
-        .ui-overlay {
-            position: absolute; bottom: 20px; right: 20px;
-            display: flex; flex-direction: column; gap: 15px; z-index: 2000;
+        /* Controles de Navegación */
+        .controls-wrapper {
+            position: fixed; bottom: 30px; right: 30px;
+            display: flex; flex-direction: column; gap: 12px; z-index: 2000;
         }
+
         .joystick {
-            display: grid; grid-template-columns: repeat(3, 50px); gap: 5px;
-            background: rgba(0,0,0,0.8); padding: 10px; border-radius: 15px;
+            display: grid; grid-template-columns: repeat(3, 55px); gap: 5px;
+            background: rgba(255,255,255,0.9); padding: 10px; border-radius: 18px;
+            backdrop-filter: blur(10px); box-shadow: 0 8px 25px rgba(0,0,0,0.1);
         }
-        .nav-btn { width: 50px; height: 50px; border: none; background: #333; color: #fff; border-radius: 10px; cursor: pointer; font-size: 20px; }
-        .nav-btn:hover { background: var(--verde-base); }
-        .zoom-pill { display: flex; gap: 8px; background: rgba(0,0,0,0.8); padding: 10px; border-radius: 15px; }
-        .action-btn { width: 55px; height: 55px; border-radius: 12px; border: none; font-weight: 900; font-size: 22px; cursor: pointer; }
+
+        .nav-btn {
+            width: 55px; height: 55px; border: none; background: #fff;
+            border-radius: 12px; font-size: 22px; cursor: pointer;
+            display: flex; align-items: center; justify-content: center;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+        }
+        .nav-btn:hover { background: var(--verde-base); color: #fff; }
+
+        .zoom-pill {
+            display: flex; gap: 10px; background: rgba(255,255,255,0.9); 
+            padding: 10px; border-radius: 18px; backdrop-filter: blur(10px);
+            box-shadow: 0 8px 25px rgba(0,0,0,0.1);
+        }
+        .action-btn {
+            width: 60px; height: 60px; border-radius: 15px; border: none;
+            background: #fff; font-size: 24px; font-weight: 900; cursor: pointer;
+        }
+        .action-btn:hover { background: #111; color: #fff; }
     </style>
 </head>
 <body>
 
-<div class="master-wrapper">
-    <div class="map-frame">
-        <div id="viewport">
-            <div id="container">
-                <img src="Hall 1.png" alt="Plano Hall 1">
-                <div id="capa-mesas"></div> 
-            </div>
-        </div>
-
-        <div class="ui-overlay">
-            <div class="joystick">
-                <button class="nav-btn" style="grid-column:2" onclick="move('up')">↑</button>
-                <button class="nav-btn" style="grid-column:1; grid-row:2" onclick="move('left')">←</button>
-                <button class="nav-btn" style="grid-column:3; grid-row:2" onclick="move('right')">→</button>
-                <button class="nav-btn" style="grid-column:2; grid-row:3" onclick="move('down')">↓</button>
-            </div>
-            <div class="zoom-pill">
-                <button class="action-btn" onclick="zoom(1.3)">＋</button>
-                <button class="action-btn" onclick="zoom(0.7)">－</button>
-                <button class="action-btn" style="font-size:10px" onclick="fit()">RESET</button>
-            </div>
+    <div id="viewport">
+        <div id="container">
+            <img src="Hall 1.png" alt="Plano Hall 1">
+            <div id="capa-mesas"></div> 
         </div>
     </div>
-</div>
 
-<script>
-    let scale = 1;
-    const container = document.getElementById('container');
-    const viewport = document.getElementById('viewport');
+    <div class="controls-wrapper">
+        <div class="joystick">
+            <button class="nav-btn" style="grid-column:2" onclick="move('up')">↑</button>
+            <button class="nav-btn" style="grid-column:1; grid-row:2" onclick="move('left')">←</button>
+            <button class="nav-btn" style="grid-column:3; grid-row:2" onclick="move('right')">→</button>
+            <button class="nav-btn" style="grid-column:2; grid-row:3" onclick="move('down')">↓</button>
+        </div>
 
-    async function cargarMesas() {
-        try {
-            const response = await fetch('mesas.html');
-            const html = await response.text();
-            document.getElementById('capa-mesas').innerHTML = html;
-            fit(); 
-        } catch (err) { console.error(err); }
-    }
+        <div class="zoom-pill">
+            <button class="action-btn" onclick="zoom(1.4)">＋</button>
+            <button class="action-btn" onclick="zoom(0.7)">－</button>
+            <button class="action-btn" style="font-size: 11px;" onclick="fit()">FIT</button>
+        </div>
+    </div>
 
-    function zoom(f) { 
-        let newScale = scale * f;
-        if (newScale >= 0.03 && newScale <= 2) {
-            scale = newScale;
-            container.style.transform = `scale(${scale})`; 
+    <script>
+        let scale = 1;
+        const container = document.getElementById('container');
+        const viewport = document.getElementById('viewport');
+
+        async function cargarMesas() {
+            try {
+                const response = await fetch('mesas.html');
+                const html = await response.text();
+                document.getElementById('capa-mesas').innerHTML = html;
+                fit(); 
+            } catch (err) { console.error("Error cargando mesas:", err); }
         }
-    }
 
-    function move(dir) {
-        const s = 400;
-        if(dir === 'up') viewport.scrollTop -= s;
-        if(dir === 'down') viewport.scrollTop += s;
-        if(dir === 'left') viewport.scrollLeft -= s;
-        if(dir === 'right') viewport.scrollLeft += s;
-    }
+        function zoom(f) { 
+            let newScale = scale * f;
+            // Límites de zoom para evitar niveles "microscópicos"
+            if (newScale >= 0.04 && newScale <= 2.2) {
+                scale = newScale;
+                container.style.transform = `scale(${scale})`; 
+            }
+        }
 
-    function fit() { 
-        // Escala inicial para ver todo el plano
-        scale = viewport.clientWidth / 12000; 
-        container.style.transform = `scale(${scale})`;
-        // Reset de scroll para que no se pierda al inicio
-        viewport.scrollLeft = 0;
-        viewport.scrollTop = 0;
-    }
+        function move(dir) {
+            const step = 400;
+            if(dir === 'up') viewport.scrollTop -= step;
+            if(dir === 'down') viewport.scrollTop += step;
+            if(dir === 'left') viewport.scrollLeft -= step;
+            if(dir === 'right') viewport.scrollLeft += step;
+        }
 
-    window.onload = cargarMesas;
-    window.onresize = fit;
+        function fit() { 
+            // Ajuste para ver el ancho total del mapa al inicio
+            scale = window.innerWidth / 10169; 
+            container.style.transform = `scale(${scale})`;
+            viewport.scrollTo(0,0);
+        }
 
-    // Arrastre Manual
-    let isDown = false, startX, startY, scrollL, scrollT;
-    viewport.addEventListener('mousedown', (e) => {
-        isDown = true;
-        startX = e.pageX - viewport.offsetLeft;
-        startY = e.pageY - viewport.offsetTop;
-        scrollL = viewport.scrollLeft;
-        scrollT = viewport.scrollTop;
-    });
-    document.addEventListener('mouseup', () => isDown = false);
-    viewport.addEventListener('mousemove', (e) => {
-        if (!isDown) return;
-        const x = e.pageX - viewport.offsetLeft;
-        const y = e.pageY - viewport.offsetTop;
-        viewport.scrollLeft = scrollL - (x - startX) * 1.5;
-        viewport.scrollTop = scrollT - (y - startY) * 1.5;
-    });
-</script>
+        window.onload = cargarMesas;
+        window.onresize = fit;
+
+        let isDown = false, startX, startY, scrollL, scrollT;
+        viewport.addEventListener('mousedown', (e) => {
+            isDown = true;
+            startX = e.pageX - viewport.offsetLeft;
+            startY = e.pageY - viewport.offsetTop;
+            scrollL = viewport.scrollLeft;
+            scrollT = viewport.scrollTop;
+        });
+        document.addEventListener('mouseup', () => isDown = false);
+        viewport.addEventListener('mousemove', (e) => {
+            if (!isDown) return;
+            const x = e.pageX - viewport.offsetLeft;
+            const y = e.pageY - viewport.offsetTop;
+            viewport.scrollLeft = scrollL - (x - startX) * 1.5;
+            viewport.scrollTop = scrollT - (y - startY) * 1.5;
+        });
+    </script>
 </body>
 </html>
