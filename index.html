@@ -111,66 +111,96 @@
     </div>
 
     <script>
-        let scale = 1;
-        const container = document.getElementById('container');
-        const viewport = document.getElementById('viewport');
+let scale = 1;
+    const container = document.getElementById('container');
+    const viewport = document.getElementById('viewport');
 
-        // FUNCIÓN DE CARGA DINÁMICA
-        async function cargarMesas() {
-            try {
-                const response = await fetch('mesas.html');
-                if (!response.ok) throw new Error('No se pudo cargar el archivo mesas.html');
-                const html = await response.text();
-                document.getElementById('capa-mesas').innerHTML = html;
-                
-                // Una vez cargadas las mesas, ajustamos la vista inicial
-                fit(); 
-            } catch (err) {
-                console.error("Error cargando mesas:", err);
-            }
+    // Carga dinámica de mesas
+    async function cargarMesas() {
+        try {
+            const response = await fetch('mesas.html');
+            if (!response.ok) throw new Error('Error al cargar mesas.html');
+            const html = await response.text();
+            document.getElementById('capa-mesas').innerHTML = html;
+            fit(); 
+        } catch (err) {
+            console.error("Error cargando mesas:", err);
         }
+    }
 
-        function zoom(f) { 
-            scale *= f; 
-            scale = Math.max(0.05, Math.min(scale, 4)); 
-            container.style.transform = `scale(${scale})`; 
-        }
+    // Zoom nítido
+    function zoom(f) { 
+        scale *= f; 
+        scale = Math.max(0.05, Math.min(scale, 4)); 
+        container.style.transform = `scale(${scale})`; 
+    }
 
-        function fit() { 
-            // Calcula la escala para que el plano de 10.169px se vea entero en pantalla
-            scale = Math.min(window.innerWidth / 10169, window.innerHeight / 5400); 
-            container.style.transform = `scale(${scale})`;
-            viewport.scrollTo(0,0);
-        }
-
-        // Ejecución inicial
-        window.onload = cargarMesas;
-        window.onresize = fit;
-
-        // Script de Arrastre (Drag to Scroll)
-        let isDown = false, startX, startY, scrollLeft, scrollTop;
-        viewport.addEventListener('mousedown', (e) => {
-            isDown = true; 
-            viewport.style.cursor = 'grabbing';
-            startX = e.pageX - viewport.offsetLeft; 
-            startY = e.pageY - viewport.offsetTop;
-            scrollLeft = viewport.scrollLeft; 
-            scrollTop = viewport.scrollTop;
+    // Ajuste inicial centrado
+    function fit() { 
+        scale = Math.min(window.innerWidth / 10169, window.innerHeight / 5400); 
+        container.style.transform = `scale(${scale})`;
+        viewport.scrollTo({
+            top: (container.offsetHeight * scale / 2) - (viewport.clientHeight / 2),
+            left: (container.offsetWidth * scale / 2) - (viewport.clientWidth / 2),
+            behavior: 'smooth'
         });
-        document.addEventListener('mouseup', () => {
-            isDown = false;
-            viewport.style.cursor = 'grab';
-        });
-        viewport.addEventListener('mousemove', (e) => {
-            if (!isDown) return;
-            e.preventDefault();
-            const x = e.pageX - viewport.offsetLeft;
-            const y = e.pageY - viewport.offsetTop;
-            const walkX = (x - startX);
-            const walkY = (y - startY);
-            viewport.scrollLeft = scrollLeft - walkX;
-            viewport.scrollTop = scrollTop - walkY;
-        });
+    }
+
+    window.onload = cargarMesas;
+    window.onresize = fit;
+
+    // --- MEJORA DE ARRASTRE (DRAG & SCROLL) ---
+    let isDown = false;
+    let startX, startY, scrollLeft, scrollTop;
+
+    // Soporte para Ratón
+    viewport.addEventListener('mousedown', (e) => {
+        isDown = true;
+        viewport.classList.add('active');
+        startX = e.pageX - viewport.offsetLeft;
+        startY = e.pageY - viewport.offsetTop;
+        scrollLeft = viewport.scrollLeft;
+        scrollTop = viewport.scrollTop;
+    });
+
+    const endDrag = () => {
+        isDown = false;
+        viewport.classList.remove('active');
+    };
+
+    viewport.addEventListener('mouseleave', endDrag);
+    viewport.addEventListener('mouseup', endDrag);
+
+    viewport.addEventListener('mousemove', (e) => {
+        if (!isDown) return;
+        e.preventDefault();
+        const x = e.pageX - viewport.offsetLeft;
+        const y = e.pageY - viewport.offsetTop;
+        // Multiplicador 1.5 para que el mapa "siga" al ratón con más agilidad
+        const walkX = (x - startX) * 1.5; 
+        const walkY = (y - startY) * 1.5;
+        viewport.scrollLeft = scrollLeft - walkX;
+        viewport.scrollTop = scrollTop - walkY;
+    });
+
+    // Soporte Táctil (Móviles) mejorado
+    viewport.addEventListener('touchstart', (e) => {
+        isDown = true;
+        startX = e.touches[0].pageX - viewport.offsetLeft;
+        startY = e.touches[0].pageY - viewport.offsetTop;
+        scrollLeft = viewport.scrollLeft;
+        scrollTop = viewport.scrollTop;
+    }, {passive: true});
+
+    viewport.addEventListener('touchmove', (e) => {
+        if (!isDown) return;
+        const x = e.touches[0].pageX - viewport.offsetLeft;
+        const y = e.touches[0].pageY - viewport.offsetTop;
+        viewport.scrollLeft = scrollLeft - (x - startX);
+        viewport.scrollTop = scrollTop - (y - startY);
+    }, {passive: true});
+
+    viewport.addEventListener('touchend', endDrag);
     </script>
 </body>
 </html>
