@@ -5,108 +5,37 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>HALL 1 - Mapa Interactivo IFA</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700;900&display=swap" rel="stylesheet">
-    
     <style>
         :root {
             --verde-base: #2ecc71;
             --verde-sport: #00ffb4;
             --fuente: 'Inter', sans-serif;
         }
-
-        body, html { 
-            margin: 0; padding: 0; width: 100%; height: 100%; 
-            overflow: hidden; background: #f0f0f0; font-family: var(--fuente); 
-        }
-        
-        #viewport { 
-            width: 100vw; height: 100vh; 
-            overflow: auto; 
-            display: block; 
-            cursor: default; /* Puntero normal por defecto */
-            scroll-behavior: smooth;
-        }
-
-        #container { 
-            position: relative; 
-            transform-origin: 0 0; 
-            transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-            display: inline-block;
-        }
-        
-        img { 
-            width: 10169px; height: auto; display: block; 
-            image-rendering: high-quality; 
-        }
-
-        .mesa { 
-            position: absolute; 
-            border: 2px solid var(--verde-base); 
-            background: rgba(46, 204, 113, 0.25); 
-            box-sizing: border-box; 
-            z-index: 10;
-            border-radius: 4px;
-            cursor: pointer; /* Cambia a mano de click solo en las mesas */
-        }
+        body, html { margin: 0; padding: 0; width: 100%; height: 100%; overflow: hidden; background: #f0f0f0; font-family: var(--fuente); }
+        #viewport { width: 100vw; height: 100vh; overflow: auto; display: block; cursor: default; scroll-behavior: smooth; }
+        #container { position: relative; transform-origin: 0 0; transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1); display: inline-block; }
+        img { width: 10169px; height: auto; display: block; image-rendering: high-quality; }
+        .mesa { position: absolute; border: 2px solid var(--verde-base); background: rgba(46, 204, 113, 0.25); box-sizing: border-box; z-index: 10; border-radius: 4px; cursor: pointer; }
         .mesa.sport { border-color: var(--verde-sport); background: rgba(0, 255, 180, 0.25); }
         .mesa:hover { background: rgba(46, 204, 113, 0.7); border-color: #fff; box-shadow: 0 0 30px var(--verde-base); z-index: 100; }
-        
-        /* Tooltip Masivo */
-        .mesa::after {
-            content: attr(data-info); 
-            position: absolute; 
-            bottom: 150%; left: 50%; 
-            transform: translateX(-50%) translateY(10px);
-            background: #000; color: #fff; 
-            padding: 20px 40px; border-radius: 14px; 
-            font-weight: 900; font-size: 45px;
-            white-space: nowrap; opacity: 0; 
-            pointer-events: none; transition: all 0.2s ease;
-            box-shadow: 0 15px 45px rgba(0,0,0,0.6);
-            border: 3px solid var(--verde-base);
-            z-index: 1000;
-        }
+        .mesa::after { content: attr(data-info); position: absolute; bottom: 150%; left: 50%; transform: translateX(-50%) translateY(10px); background: #000; color: #fff; padding: 20px 40px; border-radius: 14px; font-weight: 900; font-size: 45px; white-space: nowrap; opacity: 0; pointer-events: none; transition: all 0.2s ease; box-shadow: 0 15px 45px rgba(0,0,0,0.6); border: 3px solid var(--verde-base); z-index: 1000; }
         .mesa:hover::after { opacity: 1; transform: translateX(-50%) translateY(0); }
-
-        /* Controles */
-        .controls-wrapper {
-            position: fixed; bottom: 30px; right: 30px;
-            display: flex; flex-direction: column; gap: 12px; z-index: 2000;
-        }
-
-        .joystick {
-            display: grid; grid-template-columns: repeat(3, 55px); gap: 5px;
-            background: rgba(255,255,255,0.9); padding: 10px; border-radius: 18px;
-            backdrop-filter: blur(10px); box-shadow: 0 8px 25px rgba(0,0,0,0.1);
-        }
-
-        .nav-btn {
-            width: 55px; height: 55px; border: none; background: #fff;
-            border-radius: 12px; font-size: 22px; cursor: pointer;
-            display: flex; align-items: center; justify-content: center;
-        }
+        .controls-wrapper { position: fixed; bottom: 30px; right: 30px; display: flex; flex-direction: column; gap: 12px; z-index: 2000; }
+        .joystick { display: grid; grid-template-columns: repeat(3, 55px); gap: 5px; background: rgba(255,255,255,0.9); padding: 10px; border-radius: 18px; backdrop-filter: blur(10px); box-shadow: 0 8px 25px rgba(0,0,0,0.1); }
+        .nav-btn { width: 55px; height: 55px; border: none; background: #fff; border-radius: 12px; font-size: 22px; cursor: pointer; display: flex; align-items: center; justify-content: center; }
         .nav-btn:hover { background: var(--verde-base); color: #fff; }
-
-        .zoom-pill {
-            display: flex; gap: 10px; background: rgba(255,255,255,0.9); 
-            padding: 10px; border-radius: 18px; backdrop-filter: blur(10px);
-            box-shadow: 0 8px 25px rgba(0,0,0,0.1);
-        }
-        .action-btn {
-            width: 60px; height: 60px; border-radius: 15px; border: none;
-            background: #fff; font-size: 24px; font-weight: 900; cursor: pointer;
-        }
+        .zoom-pill { display: flex; gap: 10px; background: rgba(255,255,255,0.9); padding: 10px; border-radius: 18px; backdrop-filter: blur(10px); box-shadow: 0 8px 25px rgba(0,0,0,0.1); }
+        .action-btn { width: 60px; height: 60px; border-radius: 15px; border: none; background: #fff; font-size: 24px; font-weight: 900; cursor: pointer; }
         .action-btn:hover { background: #111; color: #fff; }
     </style>
 </head>
 <body>
-
     <div id="viewport">
         <div id="container">
             <img src="Hall 1.png" alt="Plano Hall 1">
             <div id="capa-mesas"></div> 
         </div>
     </div>
-
     <div class="controls-wrapper">
         <div class="joystick">
             <button class="nav-btn" style="grid-column:2" onclick="move('up')">↑</button>
@@ -114,14 +43,12 @@
             <button class="nav-btn" style="grid-column:3; grid-row:2" onclick="move('right')">→</button>
             <button class="nav-btn" style="grid-column:2; grid-row:3" onclick="move('down')">↓</button>
         </div>
-
         <div class="zoom-pill">
             <button class="action-btn" onclick="zoom(1.4)">＋</button>
             <button class="action-btn" onclick="zoom(0.7)">－</button>
             <button class="action-btn" style="font-size: 11px;" onclick="fit()">FIT</button>
         </div>
     </div>
-
     <script>
         let scale = 1;
         const container = document.getElementById('container');
@@ -138,7 +65,9 @@
 
         function zoom(f) { 
             let newScale = scale * f;
-            if (newScale >= 0.04 && newScale <= 2.2) {
+            // LIMITADO: Ahora el máximo es 0.8 en lugar de 2.2.
+            // Esto evita que el usuario se acerque demasiado.
+            if (newScale >= 0.01 && newScale <= 0.8) {
                 scale = newScale;
                 container.style.transform = `scale(${scale})`; 
             }
@@ -153,7 +82,7 @@
         }
 
         function fit() { 
-            scale = window.innerWidth / 10169; 
+            scale = (window.innerWidth / 10169) * 0.8; 
             container.style.transform = `scale(${scale})`;
             viewport.scrollTo(0,0);
         }
