@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>HALL 1 - Mapa Interactivo IFA</title>
+    <title>HALL 1 - Interactive Map IFA</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700;900&display=swap" rel="stylesheet">
     
     <style>
@@ -11,22 +11,43 @@
             --verde-base: #2ecc71;
             --verde-sport: #00ffb4;
             --fuente: 'Inter', sans-serif;
-            --glass: rgba(255, 255, 255, 0.85);
+            --bg-page: #1a1a1a; /* Fondo oscuro elegante para que resalte el plano */
         }
 
         body, html { 
             margin: 0; padding: 0; width: 100%; height: 100%; 
-            overflow: hidden; background: #e0e0e0; font-family: var(--fuente); 
+            overflow: hidden; background: var(--bg-page); font-family: var(--fuente); 
+        }
+
+        /* Contenedor decorativo exterior */
+        .master-wrapper {
+            padding: 20px;
+            height: calc(100vh - 40px);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        /* El "Marco" bonito del mapa */
+        .map-frame {
+            width: 100%;
+            height: 100%;
+            background: #fff;
+            border-radius: 30px;
+            overflow: hidden;
+            position: relative;
+            box-shadow: 0 30px 100px rgba(0,0,0,0.5);
+            border: 1px solid rgba(255,255,255,0.1);
         }
         
         #viewport { 
-            width: 100vw; height: 100vh; 
+            width: 100%; height: 100%; 
             overflow: auto; 
             display: flex; 
             align-items: center; 
             justify-content: center; 
             cursor: grab;
-            scroll-behavior: smooth; /* Movimiento suave para las flechas */
+            scroll-behavior: smooth;
         }
         #viewport:active { cursor: grabbing; }
         #viewport::-webkit-scrollbar { display: none; }
@@ -36,171 +57,170 @@
             transform-origin: center center; 
             transition: transform 0.4s cubic-bezier(0.2, 1, 0.3, 1);
             display: inline-block;
+            padding: 1000px; /* Margen interno para que no se pegue a los bordes al arrastrar */
         }
         
         img { 
             width: 10169px; height: auto; display: block; 
             image-rendering: high-quality; 
+            box-shadow: 0 0 50px rgba(0,0,0,0.1);
         }
 
-        /* Mesas con bordes suaves */
+        /* Estilo Mesas */
         .mesa { 
             position: absolute; 
             border: 2px solid var(--verde-base); 
-            background: rgba(46, 204, 113, 0.25); 
+            background: rgba(46, 204, 113, 0.3); 
             box-sizing: border-box; 
             z-index: 10;
-            border-radius: 4px;
+            border-radius: 6px;
         }
-        .mesa.sport { border-color: var(--verde-sport); background: rgba(0, 255, 180, 0.25); }
-        .mesa:hover { background: rgba(46, 204, 113, 0.6); border-color: #fff; box-shadow: 0 0 30px var(--verde-base); z-index: 100; }
+        .mesa.sport { border-color: var(--verde-sport); background: rgba(0, 255, 180, 0.3); }
+        .mesa:hover { background: rgba(46, 204, 113, 0.7); border-color: #fff; box-shadow: 0 0 40px var(--verde-base); z-index: 100; }
         
-        /* Tooltip Ultra-Grande */
+        /* TOOLTIP ULTRA GIGANTE */
         .mesa::after {
             content: attr(data-info); 
             position: absolute; 
-            bottom: 150%; left: 50%; 
-            transform: translateX(-50%) translateY(10px);
+            bottom: 160%; left: 50%; 
+            transform: translateX(-50%) translateY(20px);
             background: #000; color: #fff; 
-            padding: 16px 32px; border-radius: 14px; 
-            font-weight: 900; font-size: 32px; /* Tamaño aumentado */
+            padding: 24px 48px; border-radius: 20px; 
+            font-weight: 900; font-size: 48px; /* Tamaño masivo para legibilidad */
             white-space: nowrap; opacity: 0; 
             pointer-events: none; transition: all 0.3s cubic-bezier(0.18, 0.89, 0.32, 1.28);
-            box-shadow: 0 15px 45px rgba(0,0,0,0.6);
-            border: 2px solid var(--verde-base);
+            box-shadow: 0 20px 60px rgba(0,0,0,0.8);
+            border: 4px solid var(--verde-base);
         }
         .mesa:hover::after { opacity: 1; transform: translateX(-50%) translateY(0); }
 
-        /* Interfaz de Control Dinámica */
-        .controls-wrapper {
-            position: fixed; bottom: 30px; right: 30px;
-            display: flex; flex-direction: column; align-items: center; gap: 15px; z-index: 1000;
+        /* Controles Flotantes Premium */
+        .ui-overlay {
+            position: absolute; bottom: 30px; right: 30px;
+            display: flex; flex-direction: column; align-items: flex-end; gap: 20px; z-index: 1000;
         }
 
-        /* Joystick de Flechas */
         .joystick {
-            display: grid;
-            grid-template-columns: repeat(3, 50px);
-            grid-template-rows: repeat(3, 50px);
-            gap: 5px;
-            background: var(--glass); padding: 10px; border-radius: 20px;
-            backdrop-filter: blur(10px); box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+            display: grid; grid-template-columns: repeat(3, 60px); grid-template-rows: repeat(3, 60px); gap: 8px;
+            background: rgba(0, 0, 0, 0.7); padding: 15px; border-radius: 25px;
+            backdrop-filter: blur(15px); border: 1px solid rgba(255,255,255,0.2);
         }
 
         .nav-btn {
-            width: 50px; height: 50px; border: none; background: #fff;
-            border-radius: 12px; font-size: 20px; cursor: pointer;
+            width: 60px; height: 60px; border: none; background: #222; color: #fff;
+            border-radius: 15px; font-size: 24px; cursor: pointer;
             display: flex; align-items: center; justify-content: center;
-            transition: 0.2s; box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+            transition: 0.2s;
         }
-        .nav-btn:hover { background: var(--verde-base); color: #fff; }
+        .nav-btn:hover { background: var(--verde-base); }
         .up { grid-column: 2; }
         .left { grid-column: 1; grid-row: 2; }
         .right { grid-column: 3; grid-row: 2; }
         .down { grid-column: 2; grid-row: 3; }
 
-        /* Botones de Zoom */
-        .zoom-group {
-            display: flex; gap: 10px;
-            background: var(--glass); padding: 10px; border-radius: 20px;
-            backdrop-filter: blur(10px); box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+        .zoom-pill {
+            display: flex; gap: 10px; background: rgba(0, 0, 0, 0.7); 
+            padding: 12px; border-radius: 25px; backdrop-filter: blur(15px);
+            border: 1px solid rgba(255,255,255,0.2);
         }
         .action-btn {
-            width: 60px; height: 60px; border-radius: 15px; border: none;
-            background: #fff; font-size: 24px; font-weight: bold; cursor: pointer;
+            width: 65px; height: 65px; border-radius: 18px; border: none;
+            background: #fff; font-size: 28px; font-weight: 900; cursor: pointer;
             transition: 0.2s;
         }
-        .action-btn:hover { background: #111; color: #fff; }
-        .reset-text { font-size: 11px; text-transform: uppercase; font-weight: 900; }
+        .action-btn:hover { background: var(--verde-base); color: #fff; transform: scale(1.1); }
+        .reset-text { font-size: 14px; text-transform: uppercase; font-weight: 900; }
     </style>
 </head>
 <body>
 
-    <div id="viewport">
-        <div id="container">
-            <img src="Hall 1.png" alt="Plano Hall 1">
-            <div id="capa-mesas"></div> 
+<div class="master-wrapper">
+    <div class="map-frame">
+        <div id="viewport">
+            <div id="container">
+                <img src="Hall 1.png" alt="Plano Hall 1">
+                <div id="capa-mesas"></div> 
+            </div>
+        </div>
+
+        <div class="ui-overlay">
+            <div class="joystick">
+                <button class="nav-btn up" onclick="move('up')">↑</button>
+                <button class="nav-btn left" onclick="move('left')">←</button>
+                <button class="nav-btn right" onclick="move('right')">→</button>
+                <button class="nav-btn down" onclick="move('down')">↓</button>
+            </div>
+
+            <div class="zoom-pill">
+                <button class="action-btn" onclick="zoom(1.3)">＋</button>
+                <button class="action-btn" onclick="zoom(0.7)">－</button>
+                <button class="action-btn reset-text" onclick="fit()">FIT</button>
+            </div>
         </div>
     </div>
+</div>
 
-    <div class="controls-wrapper">
-        <div class="joystick">
-            <button class="nav-btn up" onclick="move('up')">↑</button>
-            <button class="nav-btn left" onclick="move('left')">←</button>
-            <button class="nav-btn right" onclick="move('right')">→</button>
-            <button class="nav-btn down" onclick="move('down')">↓</button>
-        </div>
+<script>
+    let scale = 1;
+    const container = document.getElementById('container');
+    const viewport = document.getElementById('viewport');
 
-        <div class="zoom-group">
-            <button class="action-btn" onclick="zoom(1.4)">＋</button>
-            <button class="action-btn" onclick="zoom(0.7)">－</button>
-            <button class="action-btn reset-text" onclick="fit()">FIT</button>
-        </div>
-    </div>
+    async function cargarMesas() {
+        try {
+            const response = await fetch('mesas.html');
+            const html = await response.text();
+            document.getElementById('capa-mesas').innerHTML = html;
+            fit(); 
+        } catch (err) { console.error("Error cargando mesas:", err); }
+    }
 
-    <script>
-        let scale = 1;
-        const container = document.getElementById('container');
-        const viewport = document.getElementById('viewport');
-
-        async function cargarMesas() {
-            try {
-                const response = await fetch('mesas.html');
-                const html = await response.text();
-                document.getElementById('capa-mesas').innerHTML = html;
-                fit(); 
-            } catch (err) { console.error("Error cargando mesas:", err); }
+    // ZOOM LIMITADO: Máximo 1.8x para no perder nitidez excesiva
+    function zoom(f) { 
+        let newScale = scale * f;
+        if (newScale >= 0.05 && newScale <= 1.8) {
+            scale = newScale;
+            container.style.transform = `scale(${scale})`; 
         }
+    }
 
-        // ZOOM CONTROLADO: Límite min 0.05 y máx 2.5 (Evita el nivel microscópico)
-        function zoom(f) { 
-            let newScale = scale * f;
-            if (newScale >= 0.05 && newScale <= 2.5) {
-                scale = newScale;
-                container.style.transform = `scale(${scale})`; 
-            }
-        }
+    function move(dir) {
+        const step = 400;
+        if(dir === 'up') viewport.scrollTop -= step;
+        if(dir === 'down') viewport.scrollTop += step;
+        if(dir === 'left') viewport.scrollLeft -= step;
+        if(dir === 'right') viewport.scrollLeft += step;
+    }
 
-        // FLECHAS DINÁMICAS: Desplazamiento suave
-        function move(dir) {
-            const step = 300; // Píxeles por click
-            if(dir === 'up') viewport.scrollTop -= step;
-            if(dir === 'down') viewport.scrollTop += step;
-            if(dir === 'left') viewport.scrollLeft -= step;
-            if(dir === 'right') viewport.scrollLeft += step;
-        }
-
-        function fit() { 
-            scale = Math.min(window.innerWidth / 10169, window.innerHeight / 5400); 
-            container.style.transform = `scale(${scale})`;
-            viewport.scrollTo({
-                top: (container.offsetHeight * scale / 2) - (viewport.clientHeight / 2),
-                left: (container.offsetWidth * scale / 2) - (viewport.clientWidth / 2),
-                behavior: 'smooth'
-            });
-        }
-
-        window.onload = cargarMesas;
-        window.onresize = fit;
-
-        // Arrastre mejorado
-        let isDown = false, startX, startY, scrollLeft, scrollTop;
-        viewport.addEventListener('mousedown', (e) => {
-            isDown = true;
-            startX = e.pageX - viewport.offsetLeft;
-            startY = e.pageY - viewport.offsetTop;
-            scrollLeft = viewport.scrollLeft;
-            scrollTop = viewport.scrollTop;
+    function fit() { 
+        // Empezar viendo todo el Hall 1 centrado
+        scale = Math.min(viewport.clientWidth / 11000, viewport.clientHeight / 6000); 
+        container.style.transform = `scale(${scale})`;
+        viewport.scrollTo({
+            top: (container.offsetHeight * scale / 2) - (viewport.clientHeight / 2),
+            left: (container.offsetWidth * scale / 2) - (viewport.clientWidth / 2),
+            behavior: 'smooth'
         });
-        document.addEventListener('mouseup', () => isDown = false);
-        viewport.addEventListener('mousemove', (e) => {
-            if (!isDown) return;
-            e.preventDefault();
-            const x = e.pageX - viewport.offsetLeft;
-            const y = e.pageY - viewport.offsetTop;
-            viewport.scrollLeft = scrollLeft - (x - startX) * 1.5;
-            viewport.scrollTop = scrollTop - (y - startY) * 1.5;
-        });
-    </script>
+    }
+
+    window.onload = cargarMesas;
+    window.onresize = fit;
+
+    // Arrastre mejorado
+    let isDown = false, startX, startY, scrollLeft, scrollTop;
+    viewport.addEventListener('mousedown', (e) => {
+        isDown = true;
+        startX = e.pageX - viewport.offsetLeft;
+        startY = e.pageY - viewport.offsetTop;
+        scrollLeft = viewport.scrollLeft;
+        scrollTop = viewport.scrollTop;
+    });
+    document.addEventListener('mouseup', () => isDown = false);
+    viewport.addEventListener('mousemove', (e) => {
+        if (!isDown) return;
+        e.preventDefault();
+        viewport.scrollLeft = scrollLeft - (e.pageX - viewport.offsetLeft - startX) * 1.5;
+        viewport.scrollTop = scrollTop - (e.pageY - viewport.offsetTop - startY) * 1.5;
+    });
+</script>
 </body>
 </html>
