@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;800&display=swap" rel="stylesheet">
+    <style>
+        :root { --verde: #2ecc71; --fuente: 'Inter', sans-serif; }
+        body, html { margin: 0; padding: 0; width: 100%; height: 100%; overflow: hidden; background: #f0f0f0; font-family: var(--fuente); }
+        
+        /* Contenedor Flex para centrado total */
+        #viewport { 
+            width: 100vw; height: 100vh; 
+            overflow: auto; 
+            display: flex; 
+            align-items: center; /* Centrado vertical */
+            justify-content: center; /* Centrado horizontal */
+            cursor: grab; 
+            background: #e5e5e5;
+        }
+        #viewport:active { cursor: grabbing; }
+
+        #container { 
+            position: relative; 
+            transform-origin: center center; 
+            transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            display: inline-block;
+        }
+        
+        /* Forzado de nitidez máxima */
+        img { 
+            width: 10169px; height: auto; display: block; 
+            image-rendering: -webkit-optimize-contrast; 
+            image-rendering: high-quality; 
+        }
+
+        .mesa { position: absolute; border: 1.5px solid var(--verde); background: rgba(46, 204, 113, 0.2); box-sizing: border-box; z-index: 10; }
+        .mesa.sport { border-color: #00ffb4; background: rgba(0, 255, 180, 0.2); }
+        .mesa:hover { background: rgba(46, 204, 113, 0.6); border-color: #fff; box-shadow: 0 0 25px var(--verde); z-index: 100; }
+        
+        /* Tooltip Gigante */
+        .mesa::after {
+            content: attr(data-info); position: absolute; bottom: 140%; left: 50%; transform: translateX(-50%);
+            background: #000; color: #fff; padding: 12px 24px; border-radius: 12px; font-weight: 800;
+            font-size: 24px; white-space: nowrap; opacity: 0; pointer-events: none; transition: 0.2s;
+        }
+        .mesa:hover::after { opacity: 1; }
+
+        /* Controles */
+        .controls { position: fixed; bottom: 30px; right: 30px; display: flex; flex-direction: column; gap: 10px; z-index: 1000; }
+        .btn { 
+            width: 55px; height: 55px; border-radius: 15px; border: 1px solid rgba(0,0,0,0.1); 
+            background: rgba(255,255,255,0.9); backdrop-filter: blur(10px); 
+            font-size: 24px; font-weight: bold; cursor: pointer; box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+        }
+        .btn:hover { background: #fff; transform: scale(1.05); }
+    </style>
+</head>
+<body>
+    <div id="viewport">
+        <div id="container">
+            <img src="Hall 1.png">
+            </div>
+    </div>
+    <div class="controls">
+        <button class="btn" onclick="zoom(1.5)">+</button>
+        <button class="btn" onclick="zoom(0.7)">-</button>
+        <button class="btn" onclick="fit()" style="font-size: 10px;">RESET</button>
+    </div>
+    <script>
+        let scale = 1;
+        const c = document.getElementById('container');
+        const v = document.getElementById('viewport');
+
+        function zoom(f) { 
+            scale *= f; 
+            scale = Math.max(0.05, Math.min(scale, 4)); 
+            c.style.transform = `scale(${scale})`; 
+        }
+
+        function fit() { 
+            // Ajuste para ver el plano entero centrado
+            scale = Math.min(window.innerWidth / 10169, window.innerHeight / 5400); 
+            c.style.transform = `scale(${scale})`;
+            v.scrollTo(0,0);
+        }
+
+        window.onload = fit;
+        window.onresize = fit;
+
+        // Arrastre suave
+        let isDown = false, startX, startY, scrollLeft, scrollTop;
+        v.addEventListener('mousedown', (e) => {
+            isDown = true; startX = e.pageX - v.offsetLeft; startY = e.pageY - v.offsetTop;
+            scrollLeft = v.scrollLeft; scrollTop = v.scrollTop;
+        });
+        document.addEventListener('mouseup', () => isDown = false);
+        v.addEventListener('mousemove', (e) => {
+            if (!isDown) return;
+            const x = e.pageX - v.offsetLeft; const y = e.pageY - v.offsetTop;
+            v.scrollLeft = scrollLeft - (x - startX); v.scrollTop = scrollTop - (y - startY);
+        });
+    </script>
+</body>
+</html>
