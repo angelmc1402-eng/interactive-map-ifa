@@ -161,15 +161,19 @@
     const container = document.getElementById('container');
     const viewport = document.getElementById('viewport');
 
-    // --- SISTEMA DE CARGA Y BARRIDO TOTAL ---
+    // --- SISTEMA DE CARGA Y BARRIDO TOTAL OPTIMIZADO ---
     async function cargarMesas() {
         try {
+            // 1. Cargamos el HTML de las mesas localmente
             const respHTML = await fetch('mesas.html');
             const html = await respHTML.text();
             document.getElementById('capa-mesas').innerHTML = html;
             console.log("Capa de mesas cargada localmente.");
 
-            // Iniciamos el barrido de todas las variantes de Evey
+            // Ajustamos el mapa a la pantalla de inmediato
+            fit();
+
+            // 2. Iniciamos el barrido de zonas en segundo plano
             sincronizarBarridoCompleto(); 
         } catch (e) { 
             console.error("Error cargando mesas.html:", e); 
@@ -177,10 +181,10 @@
     }
 
     async function sincronizarBarridoCompleto() {
-        console.log("Iniciando barrido total de sillas...");
+        console.log("Iniciando barrido total de sillas desde Shopify...");
         const proxy = 'https://corsproxy.io/?';
         
-        // Lista de IDs de variantes y sus prefijos correspondientes en tu mapa
+        // IDs reales de tus variantes para forzar la carga de cada zona
         const zonas = [
             { id: 56503013278028, prefijo: "TCG-A" },
             { id: 56578894725452, prefijo: "TCG-B" },
@@ -204,25 +208,28 @@
             { id: 56579214311756, prefijo: "SPORT CARDS-F" }
         ];
 
-        // Ejecutamos todas las peticiones en paralelo para máxima velocidad
+        // Ejecutamos las peticiones en paralelo para que el barrido dure pocos segundos
         const promesas = zonas.map(async (zona) => {
             try {
+                // Forzamos la variante en la URL para que Evey nos devuelva esos asientos específicos
                 const urlTienda = encodeURIComponent(`https://frikimonkey.com/products/icons-26-vendor-pass?variant=${zona.id}`);
                 const response = await fetch(proxy + urlTienda);
                 const text = await response.text();
                 const doc = new DOMParser().parseFromString(text, 'text/html');
 
+                // Buscamos el selector de asientos inyectado por Evey
                 const opciones = doc.querySelectorAll('.seat-select option');
 
                 opciones.forEach(opt => {
                     const texto = opt.textContent.trim().toLowerCase();
                     const numeroMesa = texto.split(' ')[0];
+                    // Detectamos si el asiento está bloqueado o vendido
                     const estaAgotado = opt.hasAttribute('disabled') || texto.includes('sold out');
 
                     if (estaAgotado) {
-                        // Busca la mesa exacta combinando prefijo y número (ej: TCG-A-1)
-                        const selector = `.mesa[data-info="${zona.prefijo}-${numeroMesa}"]`;
-                        const mesaElement = document.querySelector(selector);
+                        // Construimos el ID exacto que tienes en mesas.html (ej: TCG-A-1)
+                        const mesaID = `${zona.prefijo}-${numeroMesa}`;
+                        const mesaElement = document.querySelector(`.mesa[data-info="${mesaID}"]`);
                         
                         if (mesaElement) {
                             mesaElement.classList.add('agotada');
@@ -234,13 +241,12 @@
             }
         });
 
-        // Esperamos a que todas las zonas terminen de cargar
+        // Esperamos a que todas las consultas terminen
         await Promise.all(promesas);
-        console.log("Barrido completo finalizado.");
-        fit();
+        console.log("Sincronización total con Shopify completada.");
     }
 
-    // --- NAVEGACIÓN ---
+    // --- FUNCIONES DE NAVEGACIÓN ---
     function zoom(f) { 
         let newScale = scale * f;
         if (newScale >= 0.01 && newScale <= 0.8) {
@@ -258,6 +264,7 @@
     }
 
     function fit() { 
+        // 10169px es el ancho original de tu Hall 1.png
         scale = (window.innerWidth / 10169) * 0.8; 
         container.style.transform = `scale(${scale})`;
         viewport.scrollTo(0,0);
