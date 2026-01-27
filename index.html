@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Interactive Map Pro - HALL 1</title>
+    <title>HALL 1 - Interactive Map</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
 <style>
     :root {
@@ -20,7 +20,7 @@
     #container { position: relative; transform-origin: 0 0; transition: transform 0.3s ease; display: inline-block; }
     img { width: 10169px; height: auto; display: block; image-rendering: high-quality; }
 
-    /* Mesas - Colliders fijados */
+    /* Mesas */
     .mesa { 
         position: absolute; border: 2px solid var(--verde-base); 
         background: rgba(46, 204, 113, 0.25); box-sizing: border-box; 
@@ -32,32 +32,34 @@
         border-color: var(--rojo-sold) !important;
     }
 
-    /* Tooltip Pro (Diseño Rejilla Cardmadness) */
+    /* TOOLTIP HORIZONTAL (TABLE STYLE) */
     .mesa::after {
-        content: "SECTION \a" attr(data-section) "\a\a TABLE \a" attr(data-table) "\a\a" attr(data-type) " \a" attr(data-price);
+        /* Layout: SECTION | TABLE \a TYPE - PRICE */
+        content: "SECTION          |          TABLE \a " attr(data-section) "          |          " attr(data-table) "\a " attr(data-type) "  •  " attr(data-price);
         white-space: pre;
         position: absolute; bottom: 140%; left: 50%;
         transform: translateX(-50%) translateY(10px);
-        width: 280px; padding: 25px;
+        width: 480px; /* Más ancho para el formato horizontal */
+        padding: 25px 0;
         background: white; color: #2c3e50;
-        border-radius: 16px; font-weight: 800; font-size: 26px; line-height: 1.1;
+        border-radius: 12px; font-weight: 800; font-size: 24px; line-height: 1.5;
         text-align: center; opacity: 0; pointer-events: none;
         transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-        box-shadow: 0 15px 45px rgba(0,0,0,0.2);
-        border-bottom: 15px solid var(--verde-deep);
+        box-shadow: 0 15px 45px rgba(0,0,0,0.25);
+        border-bottom: 12px solid var(--verde-deep);
         z-index: 1000;
     }
 
-    /* Tooltip Agotado */
+    /* Tooltip SOLD OUT */
     .mesa.agotada::after { 
-        content: "SECTION \a" attr(data-section) "\a\a TABLE \a" attr(data-table) "\a\a STATUS \a NO DISPONIBLE";
+        content: "SECTION          |          TABLE \a " attr(data-section) "          |          " attr(data-table) "\a STATUS: SOLD OUT";
         border-bottom-color: var(--rojo-sold); 
     }
 
     .mesa:hover::after { opacity: 1; transform: translateX(-50%) translateY(0); }
     .mesa:hover { z-index: 100; border-color: white; box-shadow: 0 0 20px rgba(255,255,255,0.5); }
 
-    /* Controles */
+    /* CONTROLES */
     .controls-wrapper { position: fixed; bottom: 30px; right: 30px; display: flex; flex-direction: column; gap: 15px; z-index: 2000; }
     .joystick, .zoom-pill { background: white; padding: 12px; border-radius: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.1); }
     .joystick { display: grid; grid-template-columns: repeat(3, 45px); gap: 5px; }
@@ -109,14 +111,13 @@
                 let section = parts.length >= 2 ? parts[0] + "-" + parts[1] : info;
                 let tableNum = parts.length >= 3 ? parts[2] : "0";
 
-                // Lógica de Precios y Categorías corregida
+                // Lógica de Precios corregida para SPORT CARDS
                 let type = "Commercial Table";
                 let price = "175,00 €";
 
-                // TCG Collector: A hasta F
                 const isTCGCollector = ["TCG-A", "TCG-B", "TCG-C", "TCG-D", "TCG-E", "TCG-F"].includes(section);
                 
-                // Sport Cards Collector: A y C / Commercial: B, D, E, F
+                // Sport Cards: A y C son Collector
                 const isSportCollector = (section === "SPORT CARDS-A" || section === "SPORT CARDS-C");
 
                 if (isTCGCollector || isSportCollector) {
@@ -124,6 +125,7 @@
                     price = "70,00 €";
                 }
 
+                // Seteamos atributos para el CSS
                 m.setAttribute('data-section', section);
                 m.setAttribute('data-table', tableNum);
                 m.setAttribute('data-type', type);
@@ -131,7 +133,7 @@
             });
 
             fit();
-        } catch (e) { console.error("Error al cargar mesas:", e); }
+        } catch (e) { console.error("Error cargando mesas:", e); }
     }
 
     function zoom(f) { 
