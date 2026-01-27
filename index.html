@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>HALL 1 - Interactive Map IFA</title>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700;900&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;800&display=swap" rel="stylesheet">
 <style>
     :root {
         --verde-base: #2ecc71;
@@ -19,121 +19,79 @@
         overflow: hidden; background: #f0f0f0; font-family: var(--fuente); 
     }
     
-    #viewport { 
-        width: 100vw; height: 100vh; overflow: auto; 
-        display: block; cursor: default;
-    }
+    #viewport { width: 100vw; height: 100vh; overflow: auto; display: block; cursor: default; }
+    #container { position: relative; transform-origin: 0 0; transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1); display: inline-block; }
+    img { width: 10169px; height: auto; display: block; image-rendering: high-quality; }
 
-    #container { 
-        position: relative; transform-origin: 0 0; 
-        transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1); 
-        display: inline-block; 
-    }
-
-    img { 
-        width: 10169px; height: auto; display: block; 
-        image-rendering: high-quality; 
-    }
-
-    /* Table Styles */
+    /* Estilo de las Mesas */
     .mesa { 
         position: absolute; border: 2px solid var(--verde-base); 
         background: rgba(46, 204, 113, 0.25); box-sizing: border-box; 
         z-index: 10; border-radius: 4px; cursor: pointer; 
     }
     
-    .mesa.sport { 
-        border-color: var(--verde-sport); 
-        background: rgba(0, 255, 180, 0.25); 
-    }
+    .mesa.sport { border-color: var(--verde-sport); background: rgba(0, 255, 180, 0.25); }
     
-    /* Sold Out State (Manually added in mesas.html) */
     .mesa.agotada {
         background: rgba(231, 76, 60, 0.5) !important;
         border-color: var(--rojo-sold) !important;
     }
 
     .mesa:hover:not(.agotada) { 
-        background: rgba(46, 204, 113, 0.7); 
-        border-color: #fff; 
-        box-shadow: 0 0 30px var(--verde-base); 
-        z-index: 100; 
+        background: rgba(46, 204, 113, 0.7); border-color: #fff; 
+        box-shadow: 0 0 30px var(--verde-base); z-index: 100; 
     }
     
-    /* Elegant Multi-line Tooltip */
+    /* TOOLTIP REDISEÑADO (Legibilidad mejorada) */
     .mesa::after { 
-        /* The \a creates a line break in white-space: pre */
-        content: "SECTION: " attr(data-section) "\a TABLE: " attr(data-table) "\a STATUS: AVAILABLE";
+        content: "Section \a " attr(data-section) "\a \a Table \a " attr(data-table) "\a \a Status \a Available";
         white-space: pre;
-        position: absolute; 
-        bottom: 140%; 
-        left: 50%; 
+        position: absolute; bottom: 140%; left: 50%; 
         transform: translateX(-50%) translateY(10px); 
-        background: rgba(0, 0, 0, 0.9); 
-        color: #fff; 
-        padding: 20px 35px; 
-        border-radius: 15px; 
-        font-weight: 700; 
-        font-size: 32px; 
-        line-height: 1.4;
-        text-align: left;
-        opacity: 0; 
-        pointer-events: none; 
-        transition: all 0.2s ease; 
-        box-shadow: 0 15px 45px rgba(0,0,0,0.4); 
-        border: 3px solid var(--verde-base); 
-        z-index: 1000; 
+        background: rgba(18, 18, 18, 0.95); color: #fff; 
+        padding: 22px 30px; border-radius: 16px; 
+        font-weight: 300; font-size: 26px; line-height: 1.1;
+        text-align: left; opacity: 0; pointer-events: none; 
+        transition: all 0.2s ease; border: 2px solid var(--verde-base); 
+        box-shadow: 0 20px 50px rgba(0,0,0,0.5); z-index: 1000;
     }
 
+    /* Estilo específico para los valores destacados dentro del tooltip mediante pseudo-elementos no es posible, 
+       pero simulamos jerarquía con el espaciado y el contenido */
+    
     .mesa.sport::after { border-color: var(--verde-sport); }
 
-    /* Red Tooltip for Sold Out tables */
+    /* Tooltip cuando está agotada */
     .mesa.agotada::after { 
-        content: "SECTION: " attr(data-section) "\a TABLE: " attr(data-table) "\a STATUS: SOLD OUT";
-        background: var(--rojo-dark); 
-        border-color: #fff; 
-        box-shadow: 0 15px 45px rgba(231, 76, 60, 0.3);
+        content: "Section \a " attr(data-section) "\a \a Table \a " attr(data-table) "\a \a Status \a SOLD OUT";
+        background: var(--rojo-dark); border-color: #fff; 
     }
 
-    .mesa:hover::after { 
-        opacity: 1; 
-        transform: translateX(-50%) translateY(0); 
-    }
+    .mesa:hover::after { opacity: 1; transform: translateX(-50%) translateY(0); }
 
-    /* CONTROLES */
-    .controls-wrapper { 
-        position: fixed; bottom: 25px; right: 25px; 
-        display: flex; flex-direction: column; gap: 15px; 
-        z-index: 2000; align-items: flex-end;
+    /* CONTROLES (Basados en image_4b4fc6.png) */
+    .controls-wrapper { position: fixed; bottom: 30px; right: 30px; display: flex; flex-direction: column; gap: 20px; z-index: 2000; }
+    .joystick, .zoom-pill { 
+        background: white; padding: 15px; border-radius: 24px; 
+        box-shadow: 0 10px 40px rgba(0,0,0,0.1); backdrop-filter: blur(10px); 
     }
-    .joystick { 
-        display: grid; grid-template-columns: repeat(3, 45px); gap: 6px; 
-        background: rgba(255,255,255,0.95); padding: 12px; border-radius: 20px; 
-        backdrop-filter: blur(10px); box-shadow: 0 10px 35px rgba(0,0,0,0.15); 
-    }
-    .zoom-pill { 
-        display: flex; gap: 8px; background: rgba(255,255,255,0.95); 
-        padding: 10px; border-radius: 20px; backdrop-filter: blur(10px); 
-        box-shadow: 0 10px 35px rgba(0,0,0,0.15); 
-    }
+    .joystick { display: grid; grid-template-columns: repeat(3, 50px); gap: 8px; }
+    .zoom-pill { display: flex; gap: 10px; }
     .nav-btn, .action-btn { 
-        width: 45px; height: 45px; border: none; background: #fff; 
-        border-radius: 12px; font-size: 18px; font-weight: 900; 
-        cursor: pointer; display: flex; align-items: center; 
-        justify-content: center; transition: all 0.2s; 
-        box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+        width: 50px; height: 50px; border: none; background: #f8f9fa; 
+        border-radius: 16px; font-size: 22px; font-weight: 600; 
+        cursor: pointer; display: flex; align-items: center; justify-content: center; 
+        transition: 0.2s;
     }
-    .nav-btn:hover, .action-btn:hover { 
-        background: var(--verde-base); color: #fff; 
-        transform: translateY(-2px); box-shadow: 0 5px 15px rgba(46, 204, 113, 0.3); 
-    }
-    .fit-text { font-size: 10px; letter-spacing: 1px; }
+    .nav-btn:hover, .action-btn:hover { background: #eee; transform: scale(1.05); }
+    .action-btn.fit-btn { width: 80px; font-size: 14px; font-weight: 800; }
 </style>
 </head>
 <body>
+
     <div id="viewport">
         <div id="container">
-            <img src="Hall 1.png" alt="Hall 1 Layout">
+            <img src="Hall 1.png" alt="Hall 1">
             <div id="capa-mesas"></div> 
         </div>
     </div>
@@ -146,9 +104,9 @@
             <button class="nav-btn" style="grid-column:2; grid-row:3" onclick="move('down')">↓</button>
         </div>
         <div class="zoom-pill">
-            <button class="action-btn" onclick="zoom(1.4)">＋</button>
-            <button class="action-btn" onclick="zoom(0.7)">－</button>
-            <button class="action-btn fit-text" onclick="fit()">FIT</button>
+            <button class="action-btn" onclick="zoom(1.4)">+</button>
+            <button class="action-btn" onclick="zoom(0.7)">-</button>
+            <button class="action-btn fit-btn" onclick="fit()">FIT</button>
         </div>
     </div>
 
@@ -164,26 +122,24 @@
             const capa = document.getElementById('capa-mesas');
             capa.innerHTML = html;
 
-            // PREPARAR TOOLTIPS: Extrae datos del data-info para el diseño elegante
+            // Formatear info de mesas para el tooltip
             const mesas = capa.querySelectorAll('.mesa');
             mesas.forEach(m => {
                 const info = m.getAttribute('data-info') || ""; 
                 const parts = info.split('-');
                 
-                // Formato esperado: ZONA-SUBZONA-NUMERO (ej: TCG-A-4)
                 if (parts.length >= 3) {
-                    m.setAttribute('data-section', parts[0] + "-" + parts[1]);
+                    // TCG-A-4 -> Section: TCG-A, Table: 4
+                    m.setAttribute('data-section', (parts[0] + "-" + parts[1]).toUpperCase());
                     m.setAttribute('data-table', parts[2]);
                 } else {
                     m.setAttribute('data-section', info);
-                    m.setAttribute('data-table', "N/A");
+                    m.setAttribute('data-table', "-");
                 }
             });
 
             fit();
-        } catch (e) { 
-            console.error("Error loading mesas.html:", e); 
-        }
+        } catch (e) { console.error("Error loading mesas:", e); }
     }
 
     function zoom(f) { 
