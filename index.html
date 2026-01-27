@@ -9,17 +9,79 @@
         :root {
             --verde-base: #2ecc71;
             --verde-sport: #00ffb4;
+            --rojo-sold: #e74c3c;
             --fuente: 'Inter', sans-serif;
         }
         body, html { margin: 0; padding: 0; width: 100%; height: 100%; overflow: hidden; background: #f0f0f0; font-family: var(--fuente); }
-        #viewport { width: 100vw; height: 100vh; overflow: auto; display: block; cursor: default; scroll-behavior: smooth; }
-        #container { position: relative; transform-origin: 0 0; transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1); display: inline-block; }
+        
+        /* Viewport preparado para arrastre */
+        #viewport { 
+            width: 100vw; 
+            height: 100vh; 
+            overflow: hidden; /* Cambiado a hidden para que el drag sea fluido */
+            display: block; 
+            cursor: grab; 
+            user-select: none;
+        }
+        #viewport:active { cursor: grabbing; }
+
+        #container { 
+            position: relative; 
+            transform-origin: 0 0; 
+            transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1); 
+            display: inline-block; 
+        }
+
         img { width: 10169px; height: auto; display: block; image-rendering: high-quality; }
-        .mesa { position: absolute; border: 2px solid var(--verde-base); background: rgba(46, 204, 113, 0.25); box-sizing: border-box; z-index: 10; border-radius: 4px; cursor: pointer; }
+
+        /* Estilos de las Mesas */
+        .mesa { 
+            position: absolute; 
+            border: 2px solid var(--verde-base); 
+            background: rgba(46, 204, 113, 0.25); 
+            box-sizing: border-box; 
+            z-index: 10; 
+            border-radius: 4px; 
+            cursor: pointer; 
+        }
         .mesa.sport { border-color: var(--verde-sport); background: rgba(0, 255, 180, 0.25); }
-        .mesa:hover { background: rgba(46, 204, 113, 0.7); border-color: #fff; box-shadow: 0 0 30px var(--verde-base); z-index: 100; }
-        .mesa::after { content: attr(data-info); position: absolute; bottom: 150%; left: 50%; transform: translateX(-50%) translateY(10px); background: #000; color: #fff; padding: 20px 40px; border-radius: 14px; font-weight: 900; font-size: 45px; white-space: nowrap; opacity: 0; pointer-events: none; transition: all 0.2s ease; box-shadow: 0 15px 45px rgba(0,0,0,0.6); border: 3px solid var(--verde-base); z-index: 1000; }
+        
+        /* Estado Agotado */
+        .mesa.agotada {
+            background: rgba(231, 76, 60, 0.4) !important;
+            border-color: var(--rojo-sold) !important;
+            cursor: not-allowed !important;
+            pointer-events: none;
+        }
+
+        .mesa:hover:not(.agotada) { background: rgba(46, 204, 113, 0.7); border-color: #fff; box-shadow: 0 0 30px var(--verde-base); z-index: 100; }
+        
+        /* Tooltip / Cartel */
+        .mesa::after { 
+            content: attr(data-info); 
+            position: absolute; 
+            bottom: 150%; 
+            left: 50%; 
+            transform: translateX(-50%) translateY(10px); 
+            background: #000; 
+            color: #fff; 
+            padding: 20px 40px; 
+            border-radius: 14px; 
+            font-weight: 900; 
+            font-size: 45px; 
+            white-space: nowrap; 
+            opacity: 0; 
+            pointer-events: none; 
+            transition: all 0.2s ease; 
+            box-shadow: 0 15px 45px rgba(0,0,0,0.6); 
+            border: 3px solid var(--verde-base); 
+            z-index: 1000; 
+        }
+        .mesa.sport::after { border-color: var(--verde-sport); }
+        .mesa.agotada::after { content: attr(data-info) " - VENDIDA"; background: var(--rojo-sold); border-color: #fff; }
         .mesa:hover::after { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+        /* Controles */
         .controls-wrapper { position: fixed; bottom: 30px; right: 30px; display: flex; flex-direction: column; gap: 12px; z-index: 2000; }
         .joystick { display: grid; grid-template-columns: repeat(3, 55px); gap: 5px; background: rgba(255,255,255,0.9); padding: 10px; border-radius: 18px; backdrop-filter: blur(10px); box-shadow: 0 8px 25px rgba(0,0,0,0.1); }
         .nav-btn { width: 55px; height: 55px; border: none; background: #fff; border-radius: 12px; font-size: 22px; cursor: pointer; display: flex; align-items: center; justify-content: center; }
@@ -36,6 +98,7 @@
             <div id="capa-mesas"></div> 
         </div>
     </div>
+
     <div class="controls-wrapper">
         <div class="joystick">
             <button class="nav-btn" style="grid-column:2" onclick="move('up')">↑</button>
@@ -49,65 +112,53 @@
             <button class="action-btn" style="font-size: 11px;" onclick="fit()">FIT</button>
         </div>
     </div>
+
     <script>
         let scale = 1;
         const container = document.getElementById('container');
         const viewport = document.getElementById('viewport');
 
-      async function cargarMesas() {
-    try {
-        // 1. Cargamos el diseño de las mesas desde tu archivo local en GitHub
-        const respHTML = await fetch('mesas.html');
-        const html = await respHTML.text();
-        document.getElementById('capa-mesas').innerHTML = html;
+        // --- LÓGICA DE CARGA Y SCRAPER ---
+        async function cargarMesas() {
+            try {
+                const respHTML = await fetch('mesas.html');
+                const html = await respHTML.text();
+                document.getElementById('capa-mesas').innerHTML = html;
 
-        // 2. Leemos la web de Shopify para ver qué dice el selector de Evey
-        // Usamos un proxy para que el navegador no bloquee la lectura de otra web (CORS)
-        const proxy = 'https://corsproxy.io/?'; 
-        const urlTienda = encodeURIComponent('https://frikimonkey.com/products/icons-26-vendor-pass');
-        
-        const response = await fetch(proxy + urlTienda);
-        const text = await response.text();
-        
-        // Convertimos el texto de la web en un documento HTML que podamos "escanear"
-        const parser = new DOMParser();
-        const doc = parser.parseFromString(text, 'text/html');
+                const proxy = 'https://corsproxy.io/?'; 
+                const urlTienda = encodeURIComponent('https://frikimonkey.com/products/icons-26-vendor-pass');
+                const response = await fetch(proxy + urlTienda);
+                const text = await response.text();
+                const doc = new DOMParser().parseFromString(text, 'text/html');
 
-        // 3. Buscamos el selector '.seat-select' que encontraste al inspeccionar
-        const opciones = doc.querySelectorAll('.seat-select option');
+                const zonaActiva = doc.querySelector('input[name="Seating Zone"]:checked')?.value || "";
+                let prefijo = zonaActiva.includes("TCG") ? "TCG" : "SPORTCARDS";
 
-        opciones.forEach(opt => {
-            // Extraemos el número del asiento (ej: del texto "1 (sold out)" sacamos el "1")
-            const textoAsiento = opt.textContent.trim();
-            const numeroMesa = textoAsiento.split(' ')[0]; 
-            
-            // Comprobamos si el asiento está marcado como agotado por Evey
-            const estaAgotado = opt.hasAttribute('disabled') || textoAsiento.toLowerCase().includes('sold out');
+                const opciones = doc.querySelectorAll('.seat-select option');
 
-            if (estaAgotado) {
-                // Buscamos la mesa en tu mapa SVG que coincida con ese número
-                // IMPORTANTE: Tus data-info en el SVG deben terminar en ese número (ej: "TCG-A-1")
-                const mesaElement = document.querySelector(`[data-info$="-${numeroMesa}"]`);
-                if (mesaElement) {
-                    mesaElement.classList.add('agotada');
-                }
+                opciones.forEach(opt => {
+                    const texto = opt.textContent.trim();
+                    const numeroMesa = texto.split(' ')[0];
+                    const estaAgotado = opt.hasAttribute('disabled') || texto.toLowerCase().includes('sold out');
+
+                    if (estaAgotado) {
+                        // Busca mesas que tengan el prefijo de zona y terminen con ese número
+                        const mesaElement = document.querySelector(`.mesa[data-info*="${prefijo}"][data-info$="-${numeroMesa}"]`);
+                        if (mesaElement) {
+                            mesaElement.classList.add('agotada');
+                        }
+                    }
+                });
+                fit();
+            } catch (e) { 
+                console.error("Error cargando mesas o scraper:", e); 
+                fit(); 
             }
-        });
+        }
 
-        // Ajustamos el zoom del mapa al terminar
-        fit();
-        console.log("Sincronización con Evey completada con éxito.");
-
-    } catch (e) {
-        console.error("Error al hacer el scraper de Evey:", e);
-        fit();
-    }
-}
-
+        // --- LÓGICA DE NAVEGACIÓN Y ZOOM ---
         function zoom(f) { 
             let newScale = scale * f;
-            // LIMITADO: Ahora el máximo es 0.8 en lugar de 2.2.
-            // Esto evita que el usuario se acerque demasiado.
             if (newScale >= 0.01 && newScale <= 0.8) {
                 scale = newScale;
                 container.style.transform = `scale(${scale})`; 
@@ -127,6 +178,51 @@
             container.style.transform = `scale(${scale})`;
             viewport.scrollTo(0,0);
         }
+
+        // --- LÓGICA DE ARRASTRE (DRAG & SCROLL) ---
+        let isDown = false;
+        let startX, startY, scrollLeft, scrollTop;
+
+        viewport.addEventListener('mousedown', (e) => {
+            isDown = true;
+            startX = e.pageX - viewport.offsetLeft;
+            startY = e.pageY - viewport.offsetTop;
+            scrollLeft = viewport.scrollLeft;
+            scrollTop = viewport.scrollTop;
+        });
+
+        viewport.addEventListener('mouseleave', () => { isDown = false; });
+        viewport.addEventListener('mouseup', () => { isDown = false; });
+
+        viewport.addEventListener('mousemove', (e) => {
+            if (!isDown) return;
+            e.preventDefault();
+            const x = e.pageX - viewport.offsetLeft;
+            const y = e.pageY - viewport.offsetTop;
+            const walkX = (x - startX); 
+            const walkY = (y - startY);
+            viewport.scrollLeft = scrollLeft - walkX;
+            viewport.scrollTop = scrollTop - walkY;
+        });
+
+        // Soporte para Táctil (Móvil)
+        viewport.addEventListener('touchstart', (e) => {
+            isDown = true;
+            startX = e.touches[0].pageX - viewport.offsetLeft;
+            startY = e.touches[0].pageY - viewport.offsetTop;
+            scrollLeft = viewport.scrollLeft;
+            scrollTop = viewport.scrollTop;
+        });
+        viewport.addEventListener('touchend', () => { isDown = false; });
+        viewport.addEventListener('touchmove', (e) => {
+            if (!isDown) return;
+            const x = e.touches[0].pageX - viewport.offsetLeft;
+            const y = e.touches[0].pageY - viewport.offsetTop;
+            const walkX = (x - startX);
+            const walkY = (y - startY);
+            viewport.scrollLeft = scrollLeft - walkX;
+            viewport.scrollTop = scrollTop - walkY;
+        });
 
         window.onload = cargarMesas;
         window.onresize = fit;
