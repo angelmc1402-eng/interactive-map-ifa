@@ -156,86 +156,115 @@
         </div>
     </div>
 
-    <script>
-        let scale = 1;
-        const container = document.getElementById('container');
-        const viewport = document.getElementById('viewport');
+<script>
+    let scale = 1;
+    const container = document.getElementById('container');
+    const viewport = document.getElementById('viewport');
 
-        // --- SISTEMA DE TESTEO Y CARGA ---
-        async function cargarMesas() {
-            try {
-                const respHTML = await fetch('mesas.html');
-                const html = await respHTML.text();
-                document.getElementById('capa-mesas').innerHTML = html;
-                console.log("Capa de mesas cargada localmente.");
+    // --- SISTEMA DE CARGA Y BARRIDO TOTAL ---
+    async function cargarMesas() {
+        try {
+            const respHTML = await fetch('mesas.html');
+            const html = await respHTML.text();
+            document.getElementById('capa-mesas').innerHTML = html;
+            console.log("Capa de mesas cargada localmente.");
 
-                sincronizarConEvey(); // Primera carga
-            } catch (e) { console.error("Error cargando mesas.html:", e); }
+            // Iniciamos el barrido de todas las variantes de Evey
+            sincronizarBarridoCompleto(); 
+        } catch (e) { 
+            console.error("Error cargando mesas.html:", e); 
         }
+    }
 
-        async function sincronizarConEvey() {
+    async function sincronizarBarridoCompleto() {
+        console.log("Iniciando barrido total de sillas...");
+        const proxy = 'https://corsproxy.io/?';
+        
+        // Lista de IDs de variantes y sus prefijos correspondientes en tu mapa
+        const zonas = [
+            { id: 56503013278028, prefijo: "TCG-A" },
+            { id: 56578894725452, prefijo: "TCG-B" },
+            { id: 56578895479116, prefijo: "TCG-C" },
+            { id: 56578895053132, prefijo: "TCG-D" },
+            { id: 56578896036172, prefijo: "TCG-E" },
+            { id: 56578896494924, prefijo: "TCG-F" },
+            { id: 56578897477964, prefijo: "TCG-G" },
+            { id: 56578897805644, prefijo: "TCG-H" },
+            { id: 56578897838412, prefijo: "TCG-I" },
+            { id: 56578897969484, prefijo: "TCG-J" },
+            { id: 56578898264396, prefijo: "TCG-K" },
+            { id: 56578898788684, prefijo: "TCG-L" },
+            { id: 56578899247436, prefijo: "TCG-M" },
+            { id: 56578899738956, prefijo: "TCG-N" },
+            { id: 56578900230476, prefijo: "SPORT CARDS-A" },
+            { id: 56578900328780, prefijo: "SPORT CARDS-B" },
+            { id: 56578900361548, prefijo: "SPORT CARDS-C" },
+            { id: 56578900590924, prefijo: "SPORT CARDS-D" },
+            { id: 56578901082444, prefijo: "SPORT CARDS-E" },
+            { id: 56579214311756, prefijo: "SPORT CARDS-F" }
+        ];
+
+        // Ejecutamos todas las peticiones en paralelo para máxima velocidad
+        const promesas = zonas.map(async (zona) => {
             try {
-                const proxy = 'https://corsproxy.io/?'; 
-                const urlTienda = encodeURIComponent('https://frikimonkey.com/products/icons-26-vendor-pass');
+                const urlTienda = encodeURIComponent(`https://frikimonkey.com/products/icons-26-vendor-pass?variant=${zona.id}`);
                 const response = await fetch(proxy + urlTienda);
                 const text = await response.text();
                 const doc = new DOMParser().parseFromString(text, 'text/html');
 
-                const zonaActiva = doc.querySelector('input[name="Seating Zone"]:checked')?.value || "";
-                let prefijo = zonaActiva.includes("TCG") ? "TCG" : "SPORTCARDS";
-                
-                console.log("Zona detectada en tienda:", zonaActiva || "Ninguna (usando por defecto)");
-
                 const opciones = doc.querySelectorAll('.seat-select option');
-                if (opciones.length === 0) {
-                    console.warn("No se encontraron opciones en .seat-select. Reintentando en 3 segundos...");
-                    setTimeout(sincronizarConEvey, 3000);
-                    return;
-                }
 
                 opciones.forEach(opt => {
-                    const texto = opt.textContent.trim();
+                    const texto = opt.textContent.trim().toLowerCase();
                     const numeroMesa = texto.split(' ')[0];
-                    const estaAgotado = opt.hasAttribute('disabled') || texto.toLowerCase().includes('sold out');
+                    const estaAgotado = opt.hasAttribute('disabled') || texto.includes('sold out');
 
                     if (estaAgotado) {
-                        const mesaElement = document.querySelector(`.mesa[data-info*="${prefijo}"][data-info$="-${numeroMesa}"]`);
+                        // Busca la mesa exacta combinando prefijo y número (ej: TCG-A-1)
+                        const selector = `.mesa[data-info="${zona.prefijo}-${numeroMesa}"]`;
+                        const mesaElement = document.querySelector(selector);
+                        
                         if (mesaElement) {
                             mesaElement.classList.add('agotada');
-                            console.log("Mesa marcada como agotada:", prefijo + "-" + numeroMesa);
                         }
                     }
                 });
-
-                fit();
-            } catch (e) { console.error("Error en el Scraper:", e); }
-        }
-
-        // --- NAVEGACIÓN ---
-        function zoom(f) { 
-            let newScale = scale * f;
-            if (newScale >= 0.01 && newScale <= 0.8) {
-                scale = newScale;
-                container.style.transform = `scale(${scale})`; 
+            } catch (e) {
+                console.error(`Error escaneando zona ${zona.prefijo}:`, e);
             }
-        }
+        });
 
-        function move(dir) {
-            const step = 300;
-            if(dir === 'up') viewport.scrollTop -= step;
-            if(dir === 'down') viewport.scrollTop += step;
-            if(dir === 'left') viewport.scrollLeft -= step;
-            if(dir === 'right') viewport.scrollLeft += step;
-        }
+        // Esperamos a que todas las zonas terminen de cargar
+        await Promise.all(promesas);
+        console.log("Barrido completo finalizado.");
+        fit();
+    }
 
-        function fit() { 
-            scale = (window.innerWidth / 10169) * 0.8; 
-            container.style.transform = `scale(${scale})`;
-            viewport.scrollTo(0,0);
+    // --- NAVEGACIÓN ---
+    function zoom(f) { 
+        let newScale = scale * f;
+        if (newScale >= 0.01 && newScale <= 0.8) {
+            scale = newScale;
+            container.style.transform = `scale(${scale})`; 
         }
+    }
 
-        window.onload = cargarMesas;
-        window.onresize = fit;
-    </script>
+    function move(dir) {
+        const step = 300;
+        if(dir === 'up') viewport.scrollTop -= step;
+        if(dir === 'down') viewport.scrollTop += step;
+        if(dir === 'left') viewport.scrollLeft -= step;
+        if(dir === 'right') viewport.scrollLeft += step;
+    }
+
+    function fit() { 
+        scale = (window.innerWidth / 10169) * 0.8; 
+        container.style.transform = `scale(${scale})`;
+        viewport.scrollTo(0,0);
+    }
+
+    window.onload = cargarMesas;
+    window.onresize = fit;
+</script>
 </body>
 </html>
