@@ -4,76 +4,64 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>HALL 1 - Interactive Map</title>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
 <style>
     :root {
         --verde-base: #2ecc71;
         --verde-deep: #27ae60;
         --verde-sport: #00ffb4;
         --rojo-sold: #e74c3c;
-        --text-dark: #2c3e50;
-        --text-gray: #7f8c8d;
         --fuente: 'Inter', sans-serif;
     }
 
-    body, html { margin: 0; padding: 0; width: 100%; height: 100%; overflow: hidden; background: #1a1a1a; font-family: var(--fuente); }
+    /* Fondo gris claro como lo tenías */
+    body, html { margin: 0; padding: 0; width: 100%; height: 100%; overflow: hidden; background: #f0f0f0; font-family: var(--fuente); }
     
     #viewport { width: 100vw; height: 100vh; overflow: auto; display: block; }
     #container { position: relative; transform-origin: 0 0; transition: transform 0.3s ease; display: inline-block; }
     img { width: 10169px; height: auto; display: block; image-rendering: high-quality; }
 
-    /* Mesas */
+    /* MESAS (Colliders intactos) */
     .mesa { 
         position: absolute; border: 2px solid var(--verde-base); 
-        background: rgba(46, 204, 113, 0.2); box-sizing: border-box; 
+        background: rgba(46, 204, 113, 0.25); box-sizing: border-box; 
         z-index: 10; border-radius: 4px; cursor: pointer; 
     }
-    .mesa.sport { border-color: var(--verde-sport); }
+    .mesa.sport { border-color: var(--verde-sport); background: rgba(0, 255, 180, 0.25); }
     .mesa.agotada {
-        background: rgba(231, 76, 60, 0.3) !important;
+        background: rgba(231, 76, 60, 0.4) !important;
         border-color: var(--rojo-sold) !important;
     }
 
-    /* TOOLTIP ESTILO CARDMADNESS */
+    /* TOOLTIP ESTILO CARDMADNESS (Sin romper el collider) */
     .mesa::after {
-        content: ""; /* El contenido se genera por JS mediante variables */
-        position: absolute; bottom: 130%; left: 50%;
+        /* Usamos \a para saltos de línea y generamos el contenido por JS */
+        content: "SECTION \a" attr(data-section) "\a\a TABLE \a" attr(data-table) "\a\a" attr(data-type) " \a" attr(data-price);
+        white-space: pre;
+        position: absolute; bottom: 140%; left: 50%;
         transform: translateX(-50%) translateY(10px);
-        width: 320px;
-        background: white;
-        border-radius: 12px;
-        box-shadow: 0 15px 35px rgba(0,0,0,0.4);
-        opacity: 0; pointer-events: none;
+        width: 300px; padding: 25px;
+        background: white; color: #2c3e50;
+        border-radius: 15px; font-weight: 800; font-size: 28px; line-height: 1.2;
+        text-align: center; opacity: 0; pointer-events: none;
         transition: all 0.2s ease;
+        box-shadow: 0 15px 45px rgba(0,0,0,0.2);
+        border-bottom: 15px solid var(--verde-deep); /* La barrita verde inferior */
         z-index: 1000;
-        display: block;
     }
 
-    /* Contenedor del Tooltip (inyectado por JS) */
-    .custom-tooltip {
-        display: flex; flex-direction: column; overflow: hidden; border-radius: 12px;
+    /* Si está agotada, la barrita inferior es roja */
+    .mesa.agotada::after { 
+        content: "SECTION \a" attr(data-section) "\a\a TABLE \a" attr(data-table) "\a\a STATUS \a SOLD OUT";
+        border-bottom-color: var(--rojo-sold); 
     }
-    .tooltip-header {
-        display: grid; grid-template-columns: 1fr 1fr;
-        border-bottom: 1px solid #eee;
-    }
-    .tooltip-box { padding: 15px; text-align: center; }
-    .tooltip-box:first-child { border-right: 1px solid #eee; }
-    .tooltip-label { color: var(--text-gray); font-size: 14px; text-transform: uppercase; font-weight: 700; letter-spacing: 0.5px; }
-    .tooltip-value { color: var(--text-dark); font-size: 24px; font-weight: 800; margin-top: 4px; }
-    
-    .tooltip-footer {
-        padding: 12px 20px; display: flex; justify-content: space-between; align-items: center;
-        background: var(--verde-deep); color: white; font-weight: 700; font-size: 16px;
-    }
-    
-    .mesa.agotada .tooltip-footer { background: var(--rojo-sold); }
 
     .mesa:hover::after { opacity: 1; transform: translateX(-50%) translateY(0); }
+    .mesa:hover { z-index: 100; border-color: white; box-shadow: 0 0 20px rgba(255,255,255,0.5); }
 
     /* CONTROLES */
     .controls-wrapper { position: fixed; bottom: 30px; right: 30px; display: flex; flex-direction: column; gap: 15px; z-index: 2000; }
-    .joystick, .zoom-pill { background: white; padding: 12px; border-radius: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.3); }
+    .joystick, .zoom-pill { background: white; padding: 12px; border-radius: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.1); }
     .joystick { display: grid; grid-template-columns: repeat(3, 45px); gap: 5px; }
     .zoom-pill { display: flex; gap: 8px; }
     .nav-btn, .action-btn { width: 45px; height: 45px; border: none; background: #f0f0f0; border-radius: 10px; font-size: 18px; cursor: pointer; display: flex; align-items: center; justify-content: center; font-weight: bold; }
@@ -99,7 +87,7 @@
         <div class="zoom-pill">
             <button class="action-btn" onclick="zoom(1.4)">+</button>
             <button class="action-btn" onclick="zoom(0.7)">-</button>
-            <button class="action-btn" style="width:auto; padding:0 15px; font-size:12px;" onclick="fit()">FIT MAP</button>
+            <button class="action-btn" style="width:auto; padding:0 15px; font-size:11px;" onclick="fit()">FIT</button>
         </div>
     </div>
 
@@ -120,11 +108,10 @@
                 const info = m.getAttribute('data-info') || ""; 
                 const parts = info.split('-');
                 
-                // Lógica de Sección y Mesa
                 let section = parts.length >= 2 ? parts[0] + "-" + parts[1] : info;
                 let tableNum = parts.length >= 3 ? parts[2] : "0";
 
-                // Lógica de Precios y Tipos
+                // Definimos precios por zona
                 let type = "Commercial Table";
                 let price = "175,00 Euro";
 
@@ -136,34 +123,17 @@
                     price = "70,00 Euro";
                 }
 
-                const status = m.classList.contains('agotada') ? "SOLD OUT" : "AVAILABLE";
-
-                // Inyectamos el Tooltip Elegante
-                m.innerHTML = `
-                    <div class="custom-tooltip">
-                        <div class="tooltip-header">
-                            <div class="tooltip-box">
-                                <div class="tooltip-label">SECTION</div>
-                                <div class="tooltip-value">${section}</div>
-                            </div>
-                            <div class="tooltip-box">
-                                <div class="tooltip-label">TABLE</div>
-                                <div class="tooltip-value">${tableNum}</div>
-                            </div>
-                        </div>
-                        <div class="tooltip-footer">
-                            <span>${type}</span>
-                            <span>${status === "SOLD OUT" ? "SOLD OUT" : price}</span>
-                        </div>
-                    </div>
-                `;
+                // Seteamos los atributos que el CSS leerá para el tooltip
+                m.setAttribute('data-section', section);
+                m.setAttribute('data-table', tableNum);
+                m.setAttribute('data-type', type);
+                m.setAttribute('data-price', price);
             });
 
             fit();
         } catch (e) { console.error(e); }
     }
 
-    // Funciones de navegación
     function zoom(f) { 
         let newScale = scale * f;
         if (newScale >= 0.01 && newScale <= 0.8) {
@@ -172,14 +142,14 @@
         }
     }
     function move(dir) {
-        const step = 450;
+        const step = 400;
         if(dir === 'up') viewport.scrollTop -= step;
         if(dir === 'down') viewport.scrollTop += step;
         if(dir === 'left') viewport.scrollLeft -= step;
         if(dir === 'right') viewport.scrollLeft += step;
     }
     function fit() { 
-        scale = (window.innerWidth / 10169) * 0.85; 
+        scale = (window.innerWidth / 10169) * 0.8; 
         container.style.transform = `scale(${scale})`;
         viewport.scrollTo(0,0);
     }
