@@ -3,95 +3,88 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>HALL 1 - Interactive Map IFA</title>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;800&display=swap" rel="stylesheet">
+    <title>HALL 1 - Interactive Map</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <style>
     :root {
         --verde-base: #2ecc71;
+        --verde-deep: #27ae60;
         --verde-sport: #00ffb4;
         --rojo-sold: #e74c3c;
-        --rojo-dark: #c0392b;
+        --text-dark: #2c3e50;
+        --text-gray: #7f8c8d;
         --fuente: 'Inter', sans-serif;
     }
 
-    body, html { 
-        margin: 0; padding: 0; width: 100%; height: 100%; 
-        overflow: hidden; background: #f0f0f0; font-family: var(--fuente); 
-    }
+    body, html { margin: 0; padding: 0; width: 100%; height: 100%; overflow: hidden; background: #1a1a1a; font-family: var(--fuente); }
     
-    #viewport { width: 100vw; height: 100vh; overflow: auto; display: block; cursor: default; }
-    #container { position: relative; transform-origin: 0 0; transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1); display: inline-block; }
+    #viewport { width: 100vw; height: 100vh; overflow: auto; display: block; }
+    #container { position: relative; transform-origin: 0 0; transition: transform 0.3s ease; display: inline-block; }
     img { width: 10169px; height: auto; display: block; image-rendering: high-quality; }
 
-    /* Estilo de las Mesas */
+    /* Mesas */
     .mesa { 
         position: absolute; border: 2px solid var(--verde-base); 
-        background: rgba(46, 204, 113, 0.25); box-sizing: border-box; 
+        background: rgba(46, 204, 113, 0.2); box-sizing: border-box; 
         z-index: 10; border-radius: 4px; cursor: pointer; 
     }
-    
-    .mesa.sport { border-color: var(--verde-sport); background: rgba(0, 255, 180, 0.25); }
-    
+    .mesa.sport { border-color: var(--verde-sport); }
     .mesa.agotada {
-        background: rgba(231, 76, 60, 0.5) !important;
+        background: rgba(231, 76, 60, 0.3) !important;
         border-color: var(--rojo-sold) !important;
     }
 
-    .mesa:hover:not(.agotada) { 
-        background: rgba(46, 204, 113, 0.7); border-color: #fff; 
-        box-shadow: 0 0 30px var(--verde-base); z-index: 100; 
-    }
-    
-    /* TOOLTIP REDISEÑADO (Legibilidad mejorada) */
-    .mesa::after { 
-        content: "Section \a " attr(data-section) "\a \a Table \a " attr(data-table) "\a \a Status \a Available";
-        white-space: pre;
-        position: absolute; bottom: 140%; left: 50%; 
-        transform: translateX(-50%) translateY(10px); 
-        background: rgba(18, 18, 18, 0.95); color: #fff; 
-        padding: 22px 30px; border-radius: 16px; 
-        font-weight: 300; font-size: 26px; line-height: 1.1;
-        text-align: left; opacity: 0; pointer-events: none; 
-        transition: all 0.2s ease; border: 2px solid var(--verde-base); 
-        box-shadow: 0 20px 50px rgba(0,0,0,0.5); z-index: 1000;
+    /* TOOLTIP ESTILO CARDMADNESS */
+    .mesa::after {
+        content: ""; /* El contenido se genera por JS mediante variables */
+        position: absolute; bottom: 130%; left: 50%;
+        transform: translateX(-50%) translateY(10px);
+        width: 320px;
+        background: white;
+        border-radius: 12px;
+        box-shadow: 0 15px 35px rgba(0,0,0,0.4);
+        opacity: 0; pointer-events: none;
+        transition: all 0.2s ease;
+        z-index: 1000;
+        display: block;
     }
 
-    /* Estilo específico para los valores destacados dentro del tooltip mediante pseudo-elementos no es posible, 
-       pero simulamos jerarquía con el espaciado y el contenido */
-    
-    .mesa.sport::after { border-color: var(--verde-sport); }
-
-    /* Tooltip cuando está agotada */
-    .mesa.agotada::after { 
-        content: "Section \a " attr(data-section) "\a \a Table \a " attr(data-table) "\a \a Status \a SOLD OUT";
-        background: var(--rojo-dark); border-color: #fff; 
+    /* Contenedor del Tooltip (inyectado por JS) */
+    .custom-tooltip {
+        display: flex; flex-direction: column; overflow: hidden; border-radius: 12px;
     }
+    .tooltip-header {
+        display: grid; grid-template-columns: 1fr 1fr;
+        border-bottom: 1px solid #eee;
+    }
+    .tooltip-box { padding: 15px; text-align: center; }
+    .tooltip-box:first-child { border-right: 1px solid #eee; }
+    .tooltip-label { color: var(--text-gray); font-size: 14px; text-transform: uppercase; font-weight: 700; letter-spacing: 0.5px; }
+    .tooltip-value { color: var(--text-dark); font-size: 24px; font-weight: 800; margin-top: 4px; }
+    
+    .tooltip-footer {
+        padding: 12px 20px; display: flex; justify-content: space-between; align-items: center;
+        background: var(--verde-deep); color: white; font-weight: 700; font-size: 16px;
+    }
+    
+    .mesa.agotada .tooltip-footer { background: var(--rojo-sold); }
 
     .mesa:hover::after { opacity: 1; transform: translateX(-50%) translateY(0); }
 
-    /* CONTROLES (Basados en image_4b4fc6.png) */
-    .controls-wrapper { position: fixed; bottom: 30px; right: 30px; display: flex; flex-direction: column; gap: 20px; z-index: 2000; }
-    .joystick, .zoom-pill { 
-        background: white; padding: 15px; border-radius: 24px; 
-        box-shadow: 0 10px 40px rgba(0,0,0,0.1); backdrop-filter: blur(10px); 
-    }
-    .joystick { display: grid; grid-template-columns: repeat(3, 50px); gap: 8px; }
-    .zoom-pill { display: flex; gap: 10px; }
-    .nav-btn, .action-btn { 
-        width: 50px; height: 50px; border: none; background: #f8f9fa; 
-        border-radius: 16px; font-size: 22px; font-weight: 600; 
-        cursor: pointer; display: flex; align-items: center; justify-content: center; 
-        transition: 0.2s;
-    }
-    .nav-btn:hover, .action-btn:hover { background: #eee; transform: scale(1.05); }
-    .action-btn.fit-btn { width: 80px; font-size: 14px; font-weight: 800; }
+    /* CONTROLES */
+    .controls-wrapper { position: fixed; bottom: 30px; right: 30px; display: flex; flex-direction: column; gap: 15px; z-index: 2000; }
+    .joystick, .zoom-pill { background: white; padding: 12px; border-radius: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.3); }
+    .joystick { display: grid; grid-template-columns: repeat(3, 45px); gap: 5px; }
+    .zoom-pill { display: flex; gap: 8px; }
+    .nav-btn, .action-btn { width: 45px; height: 45px; border: none; background: #f0f0f0; border-radius: 10px; font-size: 18px; cursor: pointer; display: flex; align-items: center; justify-content: center; font-weight: bold; }
+    .nav-btn:hover, .action-btn:hover { background: var(--verde-base); color: white; }
 </style>
 </head>
 <body>
 
     <div id="viewport">
         <div id="container">
-            <img src="Hall 1.png" alt="Hall 1">
+            <img src="Hall 1.png" alt="Map">
             <div id="capa-mesas"></div> 
         </div>
     </div>
@@ -106,7 +99,7 @@
         <div class="zoom-pill">
             <button class="action-btn" onclick="zoom(1.4)">+</button>
             <button class="action-btn" onclick="zoom(0.7)">-</button>
-            <button class="action-btn fit-btn" onclick="fit()">FIT</button>
+            <button class="action-btn" style="width:auto; padding:0 15px; font-size:12px;" onclick="fit()">FIT MAP</button>
         </div>
     </div>
 
@@ -122,26 +115,55 @@
             const capa = document.getElementById('capa-mesas');
             capa.innerHTML = html;
 
-            // Formatear info de mesas para el tooltip
             const mesas = capa.querySelectorAll('.mesa');
             mesas.forEach(m => {
                 const info = m.getAttribute('data-info') || ""; 
                 const parts = info.split('-');
                 
-                if (parts.length >= 3) {
-                    // TCG-A-4 -> Section: TCG-A, Table: 4
-                    m.setAttribute('data-section', (parts[0] + "-" + parts[1]).toUpperCase());
-                    m.setAttribute('data-table', parts[2]);
-                } else {
-                    m.setAttribute('data-section', info);
-                    m.setAttribute('data-table', "-");
+                // Lógica de Sección y Mesa
+                let section = parts.length >= 2 ? parts[0] + "-" + parts[1] : info;
+                let tableNum = parts.length >= 3 ? parts[2] : "0";
+
+                // Lógica de Precios y Tipos
+                let type = "Commercial Table";
+                let price = "175,00 Euro";
+
+                const isTCGCollector = ["TCG-A", "TCG-B", "TCG-C", "TCG-D", "TCG-E", "TCG-F"].includes(section);
+                const isSportCollector = ["SPORT CARDS-A", "SPORT CARDS-B"].includes(section);
+
+                if (isTCGCollector || isSportCollector) {
+                    type = "Collector Table";
+                    price = "70,00 Euro";
                 }
+
+                const status = m.classList.contains('agotada') ? "SOLD OUT" : "AVAILABLE";
+
+                // Inyectamos el Tooltip Elegante
+                m.innerHTML = `
+                    <div class="custom-tooltip">
+                        <div class="tooltip-header">
+                            <div class="tooltip-box">
+                                <div class="tooltip-label">SECTION</div>
+                                <div class="tooltip-value">${section}</div>
+                            </div>
+                            <div class="tooltip-box">
+                                <div class="tooltip-label">TABLE</div>
+                                <div class="tooltip-value">${tableNum}</div>
+                            </div>
+                        </div>
+                        <div class="tooltip-footer">
+                            <span>${type}</span>
+                            <span>${status === "SOLD OUT" ? "SOLD OUT" : price}</span>
+                        </div>
+                    </div>
+                `;
             });
 
             fit();
-        } catch (e) { console.error("Error loading mesas:", e); }
+        } catch (e) { console.error(e); }
     }
 
+    // Funciones de navegación
     function zoom(f) { 
         let newScale = scale * f;
         if (newScale >= 0.01 && newScale <= 0.8) {
@@ -149,17 +171,15 @@
             container.style.transform = `scale(${scale})`; 
         }
     }
-
     function move(dir) {
-        const step = 400;
+        const step = 450;
         if(dir === 'up') viewport.scrollTop -= step;
         if(dir === 'down') viewport.scrollTop += step;
         if(dir === 'left') viewport.scrollLeft -= step;
         if(dir === 'right') viewport.scrollLeft += step;
     }
-
     function fit() { 
-        scale = (window.innerWidth / 10169) * 0.8; 
+        scale = (window.innerWidth / 10169) * 0.85; 
         container.style.transform = `scale(${scale})`;
         viewport.scrollTo(0,0);
     }
