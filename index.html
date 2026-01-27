@@ -20,7 +20,7 @@
     #container { position: relative; transform-origin: 0 0; transition: transform 0.3s ease; display: inline-block; }
     img { width: 10169px; height: auto; display: block; image-rendering: high-quality; }
 
-    /* Mesas - Colliders fijados */
+    /* MESAS - Colliders con corrección de Z-Index */
     .mesa { 
         position: absolute; border: 2px solid var(--verde-base); 
         background: rgba(46, 204, 113, 0.25); box-sizing: border-box; 
@@ -32,28 +32,26 @@
         border-color: var(--rojo-sold) !important;
     }
 
-    /* TOOLTIP PROFESIONAL ESTILO TABLA */
-    .mesa::after {
-        content: "SECTION          TABLE \a " attr(data-section) "          " attr(data-table) "\a " attr(data-type) "  •  " attr(data-price);
-        white-space: pre;
-        position: absolute; bottom: 140%; left: 50%;
-        transform: translateX(-50%) translateY(10px);
-        width: 440px; 
-        padding: 0; /* Quitamos el padding para que la barra inferior ajuste perfecto */
-        background: white; color: #2c3e50;
-        border-radius: 14px; font-weight: 800; font-size: 22px; line-height: 1.2;
-        text-align: center; opacity: 0; pointer-events: none;
-        transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-        box-shadow: 0 20px 50px rgba(0,0,0,0.2);
-        z-index: 1000;
-        overflow: hidden; /* Para que la barra inferior respete el border-radius */
+    /* SOLUCIÓN AL SOLAPAMIENTO: Al hacer hover, la mesa sube al frente de todas */
+    .mesa:hover { 
+        z-index: 9999 !important; 
+        border-color: white; 
+        box-shadow: 0 0 20px rgba(255,255,255,0.5); 
     }
 
-    /* Creamos el efecto de tabla inyectando el HTML real por JS */
-    .custom-tooltip {
-        display: flex; flex-direction: column; width: 100%; height: 100%;
+    /* CONTENEDOR DEL TOOLTIP (ESTILO TABLA REAL) */
+    .custom-tooltip-wrapper {
+        position: absolute; bottom: 140%; left: 50%;
+        transform: translateX(-50%) translateY(10px);
+        width: 420px; background: white; border-radius: 14px;
+        box-shadow: 0 20px 50px rgba(0,0,0,0.25);
+        opacity: 0; pointer-events: none; transition: all 0.2s ease;
+        overflow: hidden; display: flex; flex-direction: column;
     }
-    .tooltip-row { display: flex; border-bottom: 1px solid #edf2f7; }
+
+    .mesa:hover .custom-tooltip-wrapper { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+    .tooltip-row { display: flex; border-bottom: 1px solid #edf2f7; background: white; }
     .tooltip-cell { flex: 1; padding: 18px 10px; display: flex; flex-direction: column; align-items: center; }
     .tooltip-cell:first-child { border-right: 1px solid #edf2f7; }
     
@@ -62,26 +60,13 @@
 
     .tooltip-footer { 
         padding: 14px; font-size: 18px; font-weight: 700; color: white;
-        background: var(--verde-deep); display: flex; justify-content: center; gap: 8px;
+        background: var(--verde-deep); display: flex; justify-content: center;
     }
 
     .mesa.agotada .tooltip-footer { background: var(--rojo-sold); }
 
-    /* Los hovers ahora se gestionan mejor sin el ::after para permitir HTML real */
-    .mesa:hover .custom-tooltip-wrapper { opacity: 1; transform: translateX(-50%) translateY(0); }
-
-    /* Contenedor del nuevo tooltip */
-    .custom-tooltip-wrapper {
-        position: absolute; bottom: 140%; left: 50%;
-        transform: translateX(-50%) translateY(10px);
-        width: 420px; background: white; border-radius: 14px;
-        box-shadow: 0 20px 50px rgba(0,0,0,0.25);
-        opacity: 0; pointer-events: none; transition: all 0.2s ease;
-        z-index: 2000; overflow: hidden;
-    }
-
     /* CONTROLES */
-    .controls-wrapper { position: fixed; bottom: 30px; right: 30px; display: flex; flex-direction: column; gap: 15px; z-index: 3000; }
+    .controls-wrapper { position: fixed; bottom: 30px; right: 30px; display: flex; flex-direction: column; gap: 15px; z-index: 10000; }
     .joystick, .zoom-pill { background: white; padding: 12px; border-radius: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.1); }
     .joystick { display: grid; grid-template-columns: repeat(3, 45px); gap: 5px; }
     .zoom-pill { display: flex; gap: 8px; }
@@ -135,6 +120,7 @@
                 let type = "Commercial Table";
                 let price = "175,00 €";
 
+                // Lógica de Precios corregida
                 const isTCGCollector = ["TCG-A", "TCG-B", "TCG-C", "TCG-D", "TCG-E", "TCG-F"].includes(section);
                 const isSportCollector = (section === "SPORT CARDS-A" || section === "SPORT CARDS-C");
 
@@ -146,23 +132,21 @@
                 const isAgotada = m.classList.contains('agotada');
                 const footerText = isAgotada ? "SOLD OUT" : `${type}  •  ${price}`;
 
-                // Inyectamos el Tooltip de Tabla Real
+                // Inyectamos el Tooltip de Tabla con Z-Index corregido
                 m.innerHTML = `
                     <div class="custom-tooltip-wrapper">
-                        <div class="custom-tooltip">
-                            <div class="tooltip-row">
-                                <div class="tooltip-cell">
-                                    <span class="tooltip-label">Section</span>
-                                    <span class="tooltip-value">${section}</span>
-                                </div>
-                                <div class="tooltip-cell">
-                                    <span class="tooltip-label">Table</span>
-                                    <span class="tooltip-value">${tableNum}</span>
-                                </div>
+                        <div class="tooltip-row">
+                            <div class="tooltip-cell">
+                                <span class="tooltip-label">Section</span>
+                                <span class="tooltip-value">${section}</span>
                             </div>
-                            <div class="tooltip-footer">
-                                ${footerText}
+                            <div class="tooltip-cell">
+                                <span class="tooltip-label">Table</span>
+                                <span class="tooltip-value">${tableNum}</span>
                             </div>
+                        </div>
+                        <div class="tooltip-footer">
+                            ${footerText}
                         </div>
                     </div>
                 `;
