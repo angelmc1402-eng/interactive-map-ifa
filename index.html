@@ -5,134 +5,182 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>HALL 1 - Mapa Interactivo IFA</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700;900&display=swap" rel="stylesheet">
-    <style>
-        :root {
-            --verde-base: #2ecc71;
-            --verde-sport: #00ffb4;
-            --rojo-sold: #e74c3c;
-            --fuente: 'Inter', sans-serif;
-        }
-        body, html { margin: 0; padding: 0; width: 100%; height: 100%; overflow: hidden; background: #f0f0f0; font-family: var(--fuente); }
-        
-        /* Viewport estático con scroll estándar */
-        #viewport { 
-            width: 100vw; 
-            height: 100vh; 
-            overflow: auto; 
-            display: block; 
-            cursor: default;
-        }
+<style>
+    :root {
+        --verde-base: #2ecc71;
+        --verde-sport: #00ffb4;
+        --rojo-sold: #e74c3c;
+        --fuente: 'Inter', sans-serif;
+    }
 
-        #container { 
-            position: relative; 
-            transform-origin: 0 0; 
-            transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1); 
-            display: inline-block; 
-        }
+    body, html { 
+        margin: 0; 
+        padding: 0; 
+        width: 100%; 
+        height: 100%; 
+        overflow: hidden; 
+        background: #f0f0f0; 
+        font-family: var(--fuente); 
+    }
+    
+    /* Standard Scroll Viewport */
+    #viewport { 
+        width: 100vw; 
+        height: 100vh; 
+        overflow: auto; 
+        display: block; 
+        cursor: default;
+    }
 
-        img { width: 10169px; height: auto; display: block; image-rendering: high-quality; }
+    #container { 
+        position: relative; 
+        transform-origin: 0 0; 
+        transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1); 
+        display: inline-block; 
+    }
 
-        /* Estilos de las Mesas */
-        .mesa { 
-            position: absolute; 
-            border: 2px solid var(--verde-base); 
-            background: rgba(46, 204, 113, 0.25); 
-            box-sizing: border-box; 
-            z-index: 10; 
-            border-radius: 4px; 
-            cursor: pointer; 
-        }
-        .mesa.sport { border-color: var(--verde-sport); background: rgba(0, 255, 180, 0.25); }
-        
-        /* Estado Agotado */
-        .mesa.agotada {
-            background: rgba(231, 76, 60, 0.4) !important;
-            border-color: var(--rojo-sold) !important;
-            cursor: not-allowed !important;
-            pointer-events: none;
-        }
+    img { 
+        width: 10169px; 
+        height: auto; 
+        display: block; 
+        image-rendering: high-quality; 
+    }
 
-        .mesa:hover:not(.agotada) { background: rgba(46, 204, 113, 0.7); border-color: #fff; box-shadow: 0 0 30px var(--verde-base); z-index: 100; }
-        
-        /* Tooltip Premium */
-        .mesa::after { 
-            content: attr(data-info); 
-            position: absolute; 
-            bottom: 150%; 
-            left: 50%; 
-            transform: translateX(-50%) translateY(10px); 
-            background: #000; 
-            color: #fff; 
-            padding: 15px 30px; 
-            border-radius: 12px; 
-            font-weight: 900; 
-            font-size: 38px; 
-            white-space: nowrap; 
-            opacity: 0; 
-            pointer-events: none; 
-            transition: all 0.2s ease; 
-            box-shadow: 0 10px 30px rgba(0,0,0,0.5); 
-            border: 3px solid var(--verde-base); 
-            z-index: 1000; 
-        }
-        .mesa.sport::after { border-color: var(--verde-sport); }
-        .mesa.agotada::after { content: attr(data-info) " - VENDIDA"; background: var(--rojo-sold); border-color: #fff; }
-        .mesa:hover::after { opacity: 1; transform: translateX(-50%) translateY(0); }
+    /* Table Styles */
+    .mesa { 
+        position: absolute; 
+        border: 2px solid var(--verde-base); 
+        background: rgba(46, 204, 113, 0.25); 
+        box-sizing: border-box; 
+        z-index: 10; 
+        border-radius: 4px; 
+        cursor: pointer; 
+    }
+    
+    .mesa.sport { 
+        border-color: var(--verde-sport); 
+        background: rgba(0, 255, 180, 0.25); 
+    }
+    
+    /* Sold Out State */
+    .mesa.agotada {
+        background: rgba(231, 76, 60, 0.4) !important;
+        border-color: var(--rojo-sold) !important;
+        cursor: not-allowed !important;
+        pointer-events: none;
+    }
 
-        /* CONTROLES ELEGANTES */
-        .controls-wrapper { 
-            position: fixed; 
-            bottom: 25px; 
-            right: 25px; 
-            display: flex; 
-            flex-direction: column; 
-            gap: 15px; 
-            z-index: 2000; 
-            align-items: flex-end;
-        }
+    .mesa:hover:not(.agotada) { 
+        background: rgba(46, 204, 113, 0.7); 
+        border-color: #fff; 
+        box-shadow: 0 0 30px var(--verde-base); 
+        z-index: 100; 
+    }
+    
+    /* Premium Dynamic Tooltip (English) */
+    .mesa::after { 
+        content: attr(data-info) " - AVAILABLE"; 
+        position: absolute; 
+        bottom: 150%; 
+        left: 50%; 
+        transform: translateX(-50%) translateY(10px); 
+        background: #000; 
+        color: #fff; 
+        padding: 15px 30px; 
+        border-radius: 12px; 
+        font-weight: 900; 
+        font-size: 38px; 
+        white-space: nowrap; 
+        opacity: 0; 
+        pointer-events: none; 
+        transition: all 0.2s ease; 
+        box-shadow: 0 10px 30px rgba(0,0,0,0.5); 
+        border: 3px solid var(--verde-base); 
+        z-index: 1000; 
+    }
 
-        .joystick { 
-            display: grid; 
-            grid-template-columns: repeat(3, 45px); 
-            gap: 6px; 
-            background: rgba(255,255,255,0.95); 
-            padding: 12px; 
-            border-radius: 20px; 
-            backdrop-filter: blur(10px); 
-            box-shadow: 0 10px 35px rgba(0,0,0,0.15); 
-        }
+    .mesa.sport::after { 
+        border-color: var(--verde-sport); 
+    }
 
-        .zoom-pill { 
-            display: flex; 
-            gap: 8px; 
-            background: rgba(255,255,255,0.95); 
-            padding: 10px; 
-            border-radius: 20px; 
-            backdrop-filter: blur(10px); 
-            box-shadow: 0 10px 35px rgba(0,0,0,0.15); 
-        }
+    /* Automatic change when table has .agotada class */
+    .mesa.agotada::after { 
+        content: attr(data-info) " - SOLD OUT"; 
+        background: var(--rojo-sold); 
+        border-color: #fff; 
+        box-shadow: 0 10px 30px rgba(231, 76, 60, 0.4);
+    }
 
-        .nav-btn, .action-btn { 
-            width: 45px; 
-            height: 45px; 
-            border: none; 
-            background: #fff; 
-            border-radius: 12px; 
-            font-size: 18px; 
-            font-weight: 900;
-            cursor: pointer; 
-            display: flex; 
-            align-items: center; 
-            justify-content: center;
-            transition: all 0.2s;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.05);
-        }
+    .mesa:hover::after { 
+        opacity: 1; 
+        transform: translateX(-50%) translateY(0); 
+    }
 
-        .nav-btn:hover, .action-btn:hover { background: var(--verde-base); color: #fff; transform: translateY(-2px); box-shadow: 0 5px 15px rgba(46, 204, 113, 0.3); }
-        .action-btn:active { transform: translateY(0); }
-        .fit-text { font-size: 10px; letter-spacing: 1px; }
+    /* ELEGANT CONTROLS */
+    .controls-wrapper { 
+        position: fixed; 
+        bottom: 25px; 
+        right: 25px; 
+        display: flex; 
+        flex-direction: column; 
+        gap: 15px; 
+        z-index: 2000; 
+        align-items: flex-end;
+    }
 
-    </style>
+    .joystick { 
+        display: grid; 
+        grid-template-columns: repeat(3, 45px); 
+        gap: 6px; 
+        background: rgba(255,255,255,0.95); 
+        padding: 12px; 
+        border-radius: 20px; 
+        backdrop-filter: blur(10px); 
+        box-shadow: 0 10px 35px rgba(0,0,0,0.15); 
+    }
+
+    .zoom-pill { 
+        display: flex; 
+        gap: 8px; 
+        background: rgba(255,255,255,0.95); 
+        padding: 10px; 
+        border-radius: 20px; 
+        backdrop-filter: blur(10px); 
+        box-shadow: 0 10px 35px rgba(0,0,0,0.15); 
+    }
+
+    .nav-btn, .action-btn { 
+        width: 45px; 
+        height: 45px; 
+        border: none; 
+        background: #fff; 
+        border-radius: 12px; 
+        font-size: 18px; 
+        font-weight: 900;
+        cursor: pointer; 
+        display: flex; 
+        align-items: center; 
+        justify-content: center;
+        transition: all 0.2s;
+        box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+    }
+
+    .nav-btn:hover, .action-btn:hover { 
+        background: var(--verde-base); 
+        color: #fff; 
+        transform: translateY(-2px); 
+        box-shadow: 0 5px 15px rgba(46, 204, 113, 0.3); 
+    }
+
+    .action-btn:active { 
+        transform: translateY(0); 
+    }
+
+    .fit-text { 
+        font-size: 10px; 
+        letter-spacing: 1px; 
+    }
+</style>
 </head>
 <body>
     <div id="viewport">
