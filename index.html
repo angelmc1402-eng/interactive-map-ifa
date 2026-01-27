@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>HALL 1 - Interactive Map</title>
+    <title>Interactive Map Pro - HALL 1</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
 <style>
     :root {
@@ -11,17 +11,16 @@
         --verde-deep: #27ae60;
         --verde-sport: #00ffb4;
         --rojo-sold: #e74c3c;
+        --text-gray: #95a5a6;
         --fuente: 'Inter', sans-serif;
     }
 
-    /* Fondo gris claro como lo tenías */
     body, html { margin: 0; padding: 0; width: 100%; height: 100%; overflow: hidden; background: #f0f0f0; font-family: var(--fuente); }
-    
     #viewport { width: 100vw; height: 100vh; overflow: auto; display: block; }
     #container { position: relative; transform-origin: 0 0; transition: transform 0.3s ease; display: inline-block; }
     img { width: 10169px; height: auto; display: block; image-rendering: high-quality; }
 
-    /* MESAS (Colliders intactos) */
+    /* Mesas - Colliders fijados */
     .mesa { 
         position: absolute; border: 2px solid var(--verde-base); 
         background: rgba(46, 204, 113, 0.25); box-sizing: border-box; 
@@ -33,33 +32,32 @@
         border-color: var(--rojo-sold) !important;
     }
 
-    /* TOOLTIP ESTILO CARDMADNESS (Sin romper el collider) */
+    /* Tooltip Pro (Diseño Rejilla Cardmadness) */
     .mesa::after {
-        /* Usamos \a para saltos de línea y generamos el contenido por JS */
         content: "SECTION \a" attr(data-section) "\a\a TABLE \a" attr(data-table) "\a\a" attr(data-type) " \a" attr(data-price);
         white-space: pre;
         position: absolute; bottom: 140%; left: 50%;
         transform: translateX(-50%) translateY(10px);
-        width: 300px; padding: 25px;
+        width: 280px; padding: 25px;
         background: white; color: #2c3e50;
-        border-radius: 15px; font-weight: 800; font-size: 28px; line-height: 1.2;
+        border-radius: 16px; font-weight: 800; font-size: 26px; line-height: 1.1;
         text-align: center; opacity: 0; pointer-events: none;
-        transition: all 0.2s ease;
+        transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
         box-shadow: 0 15px 45px rgba(0,0,0,0.2);
-        border-bottom: 15px solid var(--verde-deep); /* La barrita verde inferior */
+        border-bottom: 15px solid var(--verde-deep);
         z-index: 1000;
     }
 
-    /* Si está agotada, la barrita inferior es roja */
+    /* Tooltip Agotado */
     .mesa.agotada::after { 
-        content: "SECTION \a" attr(data-section) "\a\a TABLE \a" attr(data-table) "\a\a STATUS \a SOLD OUT";
+        content: "SECTION \a" attr(data-section) "\a\a TABLE \a" attr(data-table) "\a\a STATUS \a NO DISPONIBLE";
         border-bottom-color: var(--rojo-sold); 
     }
 
     .mesa:hover::after { opacity: 1; transform: translateX(-50%) translateY(0); }
     .mesa:hover { z-index: 100; border-color: white; box-shadow: 0 0 20px rgba(255,255,255,0.5); }
 
-    /* CONTROLES */
+    /* Controles */
     .controls-wrapper { position: fixed; bottom: 30px; right: 30px; display: flex; flex-direction: column; gap: 15px; z-index: 2000; }
     .joystick, .zoom-pill { background: white; padding: 12px; border-radius: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.1); }
     .joystick { display: grid; grid-template-columns: repeat(3, 45px); gap: 5px; }
@@ -111,19 +109,21 @@
                 let section = parts.length >= 2 ? parts[0] + "-" + parts[1] : info;
                 let tableNum = parts.length >= 3 ? parts[2] : "0";
 
-                // Definimos precios por zona
+                // Lógica de Precios y Categorías corregida
                 let type = "Commercial Table";
-                let price = "175,00 Euro";
+                let price = "175,00 €";
 
+                // TCG Collector: A hasta F
                 const isTCGCollector = ["TCG-A", "TCG-B", "TCG-C", "TCG-D", "TCG-E", "TCG-F"].includes(section);
-                const isSportCollector = ["SPORT CARDS-A", "SPORT CARDS-B"].includes(section);
+                
+                // Sport Cards Collector: A y C / Commercial: B, D, E, F
+                const isSportCollector = (section === "SPORT CARDS-A" || section === "SPORT CARDS-C");
 
                 if (isTCGCollector || isSportCollector) {
                     type = "Collector Table";
-                    price = "70,00 Euro";
+                    price = "70,00 €";
                 }
 
-                // Seteamos los atributos que el CSS leerá para el tooltip
                 m.setAttribute('data-section', section);
                 m.setAttribute('data-table', tableNum);
                 m.setAttribute('data-type', type);
@@ -131,12 +131,12 @@
             });
 
             fit();
-        } catch (e) { console.error(e); }
+        } catch (e) { console.error("Error al cargar mesas:", e); }
     }
 
     function zoom(f) { 
         let newScale = scale * f;
-        if (newScale >= 0.01 && newScale <= 0.8) {
+        if (newScale >= 0.01 && newScale <= 1) {
             scale = newScale;
             container.style.transform = `scale(${scale})`; 
         }
