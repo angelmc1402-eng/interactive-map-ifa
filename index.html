@@ -54,14 +54,55 @@
         const container = document.getElementById('container');
         const viewport = document.getElementById('viewport');
 
-        async function cargarMesas() {
-            try {
-                const response = await fetch('mesas.html');
-                const html = await response.text();
-                document.getElementById('capa-mesas').innerHTML = html;
-                fit(); 
-            } catch (err) { console.error("Error:", err); }
-        }
+      async function cargarMesas() {
+    try {
+        // 1. Cargamos el diseño de las mesas desde tu archivo local en GitHub
+        const respHTML = await fetch('mesas.html');
+        const html = await respHTML.text();
+        document.getElementById('capa-mesas').innerHTML = html;
+
+        // 2. Leemos la web de Shopify para ver qué dice el selector de Evey
+        // Usamos un proxy para que el navegador no bloquee la lectura de otra web (CORS)
+        const proxy = 'https://corsproxy.io/?'; 
+        const urlTienda = encodeURIComponent('https://frikimonkey.com/products/icons-26-vendor-pass');
+        
+        const response = await fetch(proxy + urlTienda);
+        const text = await response.text();
+        
+        // Convertimos el texto de la web en un documento HTML que podamos "escanear"
+        const parser = new DOMParser();
+        const doc = parser.parseFromString(text, 'text/html');
+
+        // 3. Buscamos el selector '.seat-select' que encontraste al inspeccionar
+        const opciones = doc.querySelectorAll('.seat-select option');
+
+        opciones.forEach(opt => {
+            // Extraemos el número del asiento (ej: del texto "1 (sold out)" sacamos el "1")
+            const textoAsiento = opt.textContent.trim();
+            const numeroMesa = textoAsiento.split(' ')[0]; 
+            
+            // Comprobamos si el asiento está marcado como agotado por Evey
+            const estaAgotado = opt.hasAttribute('disabled') || textoAsiento.toLowerCase().includes('sold out');
+
+            if (estaAgotado) {
+                // Buscamos la mesa en tu mapa SVG que coincida con ese número
+                // IMPORTANTE: Tus data-info en el SVG deben terminar en ese número (ej: "TCG-A-1")
+                const mesaElement = document.querySelector(`[data-info$="-${numeroMesa}"]`);
+                if (mesaElement) {
+                    mesaElement.classList.add('agotada');
+                }
+            }
+        });
+
+        // Ajustamos el zoom del mapa al terminar
+        fit();
+        console.log("Sincronización con Evey completada con éxito.");
+
+    } catch (e) {
+        console.error("Error al hacer el scraper de Evey:", e);
+        fit();
+    }
+}
 
         function zoom(f) { 
             let newScale = scale * f;
