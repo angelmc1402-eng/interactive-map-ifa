@@ -101,14 +101,22 @@
     let scale = 1;
     const container = document.getElementById('container');
     const viewport = document.getElementById('viewport');
+    
+    // URL de tu Excel (con el rompe-caché al final)
+    const URL_CSV = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vSuA_zpd7Ays5Xt9MDPQzkzCbxj8s0SaDgQGhuxcthtMl59F3H9oWipgKfsUmbiDloop2b43rqoq8CG/pub?gid=0&single=true&output=csv' + '&t=' + new Date().getTime();
 
     async function cargarMesas() {
         try {
+            // 1. CARGAMOS EL HTML DE LAS MESAS
             const respHTML = await fetch('mesas.html');
             const html = await respHTML.text();
             const capa = document.getElementById('capa-mesas');
             capa.innerHTML = html;
 
+            // 2. SINCRONIZAMOS CON EL EXCEL ANTES DE GENERAR LOS TOOLTIPS
+            await sincronizarConExcel();
+
+            // 3. GENERAMOS LOS TOOLTIPS Y LÓGICA VISUAL
             const mesas = capa.querySelectorAll('.mesa');
             mesas.forEach(m => {
                 const info = m.getAttribute('data-info') || ""; 
@@ -120,7 +128,6 @@
                 let type = "Commercial Table";
                 let price = "175,00 €";
 
-                // Lógica de Precios corregida
                 const isTCGCollector = ["TCG-A", "TCG-B", "TCG-C", "TCG-D", "TCG-E", "TCG-F"].includes(section);
                 const isSportCollector = (section === "SPORT CARDS-A" || section === "SPORT CARDS-C");
 
@@ -129,10 +136,10 @@
                     price = "70,00 €";
                 }
 
+                // Si sincronizarConExcel añadió la clase 'agotada', el tooltip dirá SOLD OUT
                 const isAgotada = m.classList.contains('agotada');
                 const footerText = isAgotada ? "SOLD OUT" : `${type}  •  ${price}`;
 
-                // Inyectamos el Tooltip de Tabla con Z-Index corregido
                 m.innerHTML = `
                     <div class="custom-tooltip-wrapper">
                         <div class="tooltip-row">
@@ -156,6 +163,40 @@
         } catch (e) { console.error("Error cargando mesas:", e); }
     }
 
+    // NUEVA FUNCIÓN DE SINCRONIZACIÓN
+    async function sincronizarConExcel() {
+        try {
+            const respuesta = await fetch(URL_CSV);
+            const texto = await respuesta.text();
+            const filas = texto.split(/\r?\n/);
+
+            filas.forEach((fila, index) => {
+                if (index === 0 || !fila.trim()) return;
+                
+                // Dividir por comas respetando comillas
+                const columnas = fila.split(/,(?=(?:(?:[^"]*"){2})*[^"]*$)/);
+                
+                if (columnas.length >= 3) {
+                    const estado = columnas[1].replace(/["']/g, "").trim().toUpperCase(); 
+                    const idMesa = columnas[2].replace(/["']/g, "").trim(); 
+
+                    const mesaDiv = document.querySelector(`[data-info="${idMesa}"]`);
+                    if (mesaDiv) {
+                        if (estado === "VENDIDA") {
+                            mesaDiv.classList.add('agotada');
+                        } else {
+                            mesaDiv.classList.remove('agotada');
+                        }
+                    }
+                }
+            });
+            console.log("Excel sincronizado");
+        } catch (err) {
+            console.error("Error sincronizando Excel:", err);
+        }
+    }
+
+    // CONTROLES DE ZOOM Y MOVIMIENTO
     function zoom(f) { 
         let newScale = scale * f;
         if (newScale >= 0.01 && newScale <= 1) {
@@ -178,6 +219,9 @@
 
     window.onload = cargarMesas;
     window.onresize = fit;
+    
+    // Auto-actualizar cada 2 minutos sin recargar la página entera
+    setInterval(sincronizarConExcel, 120000);
 </script>
 </body>
 </html>
