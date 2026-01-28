@@ -1,45 +1,4 @@
-<script>
-    // Añadimos un "rompe-caché" para que siempre lea el Excel más reciente
-    const URL_CSV = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vSuA_zpd7Ays5Xt9MDPQzkzCbxj8s0SaDgQGhuxcthtMl59F3H9oWipgKfsUmbiDloop2b43rqoq8CG/pub?gid=0&single=true&output=csv' + '&t=' + new Date().getTime();
 
-    async function sincronizarMesas() {
-        try {
-            const respuesta = await fetch(URL_CSV);
-            const texto = await respuesta.text();
-            
-            // Dividimos por líneas de forma más segura
-            const filas = texto.split(/\r?\n/);
-
-            filas.forEach((fila, index) => {
-                if (index === 0 || !fila.trim()) return; 
-
-                // Esta línea limpia comillas y divide por comas correctamente
-                const columnas = fila.split(/,(?=(?:(?:[^"]*"){2})*[^"]*$)/);
-                
-                if (columnas.length >= 3) {
-                    // Limpiamos espacios y comillas residuales de las celdas
-                    const estado = columnas[1].replace(/["']/g, "").trim().toUpperCase(); 
-                    const idMesa = columnas[2].replace(/["']/g, "").trim();              
-
-                    const mesaDiv = document.querySelector(`[data-info="${idMesa}"]`);
-
-                    if (mesaDiv) {
-                        if (estado === "VENDIDA") {
-                            mesaDiv.classList.add('agotada');
-                        } else {
-                            mesaDiv.classList.remove('agotada');
-                        }
-                    }
-                }
-            });
-            console.log("Sincronización completada.");
-        } catch (e) { 
-            console.error("Error en la sincronización:", e); 
-        }
-    }
-
-    document.addEventListener('DOMContentLoaded', sincronizarMesas);
-</script>
 
 <div class="mesa" data-info="TCG-A-1" style="top:18.0723%; left:8.5751%; width:0.8613%; height:0.2977%;">
 </div>
