@@ -163,38 +163,43 @@
     }
 
     async function sincronizarConExcel() {
-        try {
-            // LA CLAVE: Usamos cache: "no-store" en lugar de modificar la URL
-            // Esto evita el error de CORS y obliga a bajar datos nuevos
-            const respuesta = await fetch(URL_CSV, { cache: "no-store" });
-            const texto = await respuesta.text();
-            const filas = texto.split(/\r?\n/);
+    try {
+        // Añadimos el tiempo de una forma que Google no bloquee (CORS)
+        const separador = URL_CSV.includes('?') ? '&' : '?';
+        const urlFinal = URL_CSV + separador + 'cache_ignore=' + Date.now();
 
-            filas.forEach((fila, index) => {
-                if (index === 0 || !fila.trim()) return;
-                
-                const columnas = fila.split(/,(?=(?:(?:[^"]*"){2})*[^"]*$)/);
-                
-                if (columnas.length >= 3) {
-                    const estado = columnas[1].replace(/["']/g, "").trim().toUpperCase(); 
-                    const idMesa = columnas[2].replace(/["']/g, "").trim(); 
+        const respuesta = await fetch(urlFinal, {
+            method: 'GET',
+            mode: 'cors',
+            cache: 'no-cache'
+        });
 
-                    const mesaDiv = document.querySelector(`[data-info="${idMesa}"]`);
-                    if (mesaDiv) {
-                        if (estado === "VENDIDA") {
-                            mesaDiv.classList.add('agotada');
-                        } else {
-                            mesaDiv.classList.remove('agotada');
-                        }
+        const texto = await respuesta.text();
+        const filas = texto.split(/\r?\n/);
+
+        filas.forEach((fila, index) => {
+            if (index === 0 || !fila.trim()) return;
+            const columnas = fila.split(/,(?=(?:(?:[^"]*"){2})*[^"]*$)/);
+            
+            if (columnas.length >= 3) {
+                const estado = columnas[1].replace(/["']/g, "").trim().toUpperCase(); 
+                const idMesa = columnas[2].replace(/["']/g, "").trim(); 
+
+                const mesaDiv = document.querySelector(`[data-info="${idMesa}"]`);
+                if (mesaDiv) {
+                    if (estado === "VENDIDA") {
+                        mesaDiv.classList.add('agotada');
+                    } else {
+                        mesaDiv.classList.remove('agotada');
                     }
                 }
-            });
-            console.log("Excel sincronizado correctamente");
-        } catch (err) {
-            console.error("Error sincronizando Excel:", err);
-        }
+            }
+        });
+        console.log("Sincronización forzada completada");
+    } catch (err) {
+        console.error("Error en sincronización forzada:", err);
     }
-
+}
     function zoom(f) { 
         let newScale = scale * f;
         if (newScale >= 0.01 && newScale <= 1) {
