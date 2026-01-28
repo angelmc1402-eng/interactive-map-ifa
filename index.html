@@ -98,22 +98,25 @@
     </div>
 
 <script>
-    let scale = 1;
+let scale = 1;
     const container = document.getElementById('container');
     const viewport = document.getElementById('viewport');
     
-    // URL de tu Excel (con el rompe-caché al final)
+    // Generamos un código único basado en el tiempo para engañar al caché
+    const cacheBuster = '?v=' + new Date().getTime();
+
+    // URL del Excel con anti-caché
     const URL_CSV = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vSuA_zpd7Ays5Xt9MDPQzkzCbxj8s0SaDgQGhuxcthtMl59F3H9oWipgKfsUmbiDloop2b43rqoq8CG/pub?gid=0&single=true&output=csv' + '&t=' + new Date().getTime();
 
     async function cargarMesas() {
         try {
-            // 1. CARGAMOS EL HTML DE LAS MESAS
-            const respHTML = await fetch('mesas.html');
+            // 1. CARGAMOS EL HTML DE LAS MESAS (también con anti-caché)
+            const respHTML = await fetch('mesas.html' + cacheBuster);
             const html = await respHTML.text();
             const capa = document.getElementById('capa-mesas');
             capa.innerHTML = html;
 
-            // 2. SINCRONIZAMOS CON EL EXCEL ANTES DE GENERAR LOS TOOLTIPS
+            // 2. SINCRONIZAMOS CON EL EXCEL
             await sincronizarConExcel();
 
             // 3. GENERAMOS LOS TOOLTIPS Y LÓGICA VISUAL
