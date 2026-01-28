@@ -98,28 +98,25 @@
     </div>
 
 <script>
-let scale = 1;
+    let scale = 1;
     const container = document.getElementById('container');
     const viewport = document.getElementById('viewport');
     
-    // Generamos un código único basado en el tiempo para engañar al caché
-    const cacheBuster = '?v=' + new Date().getTime();
+    // 1. URL limpia para evitar errores de seguridad (CORS)
+    const URL_CSV = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vSuA_zpd7Ays5Xt9MDPQzkzCbxj8s0SaDgQGhuxcthtMl59F3H9oWipgKfsUmbiDloop2b43rqoq8CG/pub?gid=0&single=true&output=csv';
 
-    // URL del Excel con anti-caché
-const URL_CSV = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vSuA_zpd7Ays5Xt9MDPQzkzCbxj8s0SaDgQGhuxcthtMl59F3H9oWipgKfsUmbiDloop2b43rqoq8CG/pub?gid=0&single=true&output=csv';
-    
-async function cargarMesas() {
+    async function cargarMesas() {
         try {
-            // 1. CARGAMOS EL HTML DE LAS MESAS (Usando el archivo correcto)
-            const respHTML = await fetch('mesas.html' + cacheBuster); 
+            // Usamos un pequeño truco de tiempo solo para el archivo local (mesas.html)
+            const respHTML = await fetch('mesas.html?v=' + new Date().getTime());
             const html = await respHTML.text();
             const capa = document.getElementById('capa-mesas');
             capa.innerHTML = html;
 
-            // 2. SINCRONIZAMOS CON EL EXCEL (Usando la URL_CSV con no-store)
+            // Llamamos a la sincronización
             await sincronizarConExcel();
 
-            // 3. GENERAMOS LOS TOOLTIPS Y LÓGICA VISUAL
+            // Generamos los tooltips
             const mesas = capa.querySelectorAll('.mesa');
             mesas.forEach(m => {
                 const info = m.getAttribute('data-info') || ""; 
@@ -167,21 +164,15 @@ async function cargarMesas() {
 
     async function sincronizarConExcel() {
         try {
-            // Añadimos el { cache: "no-store" } aquí para evitar el CORS y el Caché
+            // LA CLAVE: Usamos cache: "no-store" en lugar de modificar la URL
+            // Esto evita el error de CORS y obliga a bajar datos nuevos
             const respuesta = await fetch(URL_CSV, { cache: "no-store" });
-            const texto = await respuesta.text();
-            // ... resto de la función igual
-    // NUEVA FUNCIÓN DE SINCRONIZACIÓN
-    async function sincronizarConExcel() {
-        try {
-            const respuesta = await fetch(URL_CSV);
             const texto = await respuesta.text();
             const filas = texto.split(/\r?\n/);
 
             filas.forEach((fila, index) => {
                 if (index === 0 || !fila.trim()) return;
                 
-                // Dividir por comas respetando comillas
                 const columnas = fila.split(/,(?=(?:(?:[^"]*"){2})*[^"]*$)/);
                 
                 if (columnas.length >= 3) {
@@ -198,13 +189,12 @@ async function cargarMesas() {
                     }
                 }
             });
-            console.log("Excel sincronizado");
+            console.log("Excel sincronizado correctamente");
         } catch (err) {
             console.error("Error sincronizando Excel:", err);
         }
     }
 
-    // CONTROLES DE ZOOM Y MOVIMIENTO
     function zoom(f) { 
         let newScale = scale * f;
         if (newScale >= 0.01 && newScale <= 1) {
@@ -227,8 +217,6 @@ async function cargarMesas() {
 
     window.onload = cargarMesas;
     window.onresize = fit;
-    
-    // Auto-actualizar cada 2 minutos sin recargar la página entera
     setInterval(sincronizarConExcel, 120000);
 </script>
 </body>
