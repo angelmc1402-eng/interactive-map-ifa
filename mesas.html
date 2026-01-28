@@ -1,3 +1,37 @@
+<script>
+    const URL_CSV = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vSuA_zpd7Ays5Xt9MDPQzkzCbxj8s0SaDgQGhuxcthtMl59F3H9oWipgKfsUmbiDloop2b43rqoq8CG/pub?gid=0&single=true&output=csv';
+
+    async function sincronizarMesas() {
+        try {
+            const respuesta = await fetch(URL_CSV);
+            const texto = await respuesta.text();
+            const filas = texto.split('\n');
+
+            filas.forEach((fila, index) => {
+                if (index === 0) return; // Saltamos cabecera
+
+                const columnas = fila.split(',');
+                if (columnas.length < 3) return; // Necesitamos al menos 3 columnas
+
+                // AJUSTE PARA COLUMNA C (Índice 2)
+                const estado = columnas[1].trim().toUpperCase(); // Columna B (Estado)
+                const idMesa = columnas[2].trim();              // Columna C (ID info)
+
+                const mesaDiv = document.querySelector(`[data-info="${idMesa}"]`);
+
+                if (mesaDiv) {
+                    if (estado === "VENDIDA") {
+                        mesaDiv.classList.add('agotada');
+                    } else {
+                        mesaDiv.classList.remove('agotada');
+                    }
+                }
+            });
+        } catch (e) { console.error("Error:", e); }
+    }
+    document.addEventListener('DOMContentLoaded', sincronizarMesas);
+</script>
+
 <div class="mesa agotada" data-info="TCG-A-1" style="top:18.0723%; left:8.5751%; width:0.8613%; height:0.2977%;">
 </div>
 <div class="mesa agotada" data-info="TCG-A-2" style="top:18.0723%; left:9.4798%; width:0.8613%; height:0.2977%;">
