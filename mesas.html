@@ -1,34 +1,43 @@
 <script>
-    const URL_CSV = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vSuA_zpd7Ays5Xt9MDPQzkzCbxj8s0SaDgQGhuxcthtMl59F3H9oWipgKfsUmbiDloop2b43rqoq8CG/pub?gid=0&single=true&output=csv';
+    // Añadimos un "rompe-caché" para que siempre lea el Excel más reciente
+    const URL_CSV = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vSuA_zpd7Ays5Xt9MDPQzkzCbxj8s0SaDgQGhuxcthtMl59F3H9oWipgKfsUmbiDloop2b43rqoq8CG/pub?gid=0&single=true&output=csv' + '&t=' + new Date().getTime();
 
     async function sincronizarMesas() {
         try {
             const respuesta = await fetch(URL_CSV);
             const texto = await respuesta.text();
-            const filas = texto.split('\n');
+            
+            // Dividimos por líneas de forma más segura
+            const filas = texto.split(/\r?\n/);
 
             filas.forEach((fila, index) => {
-                if (index === 0) return; // Saltamos cabecera
+                if (index === 0 || !fila.trim()) return; 
 
-                const columnas = fila.split(',');
-                if (columnas.length < 3) return; // Necesitamos al menos 3 columnas
+                // Esta línea limpia comillas y divide por comas correctamente
+                const columnas = fila.split(/,(?=(?:(?:[^"]*"){2})*[^"]*$)/);
+                
+                if (columnas.length >= 3) {
+                    // Limpiamos espacios y comillas residuales de las celdas
+                    const estado = columnas[1].replace(/["']/g, "").trim().toUpperCase(); 
+                    const idMesa = columnas[2].replace(/["']/g, "").trim();              
 
-                // AJUSTE PARA COLUMNA C (Índice 2)
-                const estado = columnas[1].trim().toUpperCase(); // Columna B (Estado)
-                const idMesa = columnas[2].trim();              // Columna C (ID info)
+                    const mesaDiv = document.querySelector(`[data-info="${idMesa}"]`);
 
-                const mesaDiv = document.querySelector(`[data-info="${idMesa}"]`);
-
-                if (mesaDiv) {
-                    if (estado === "VENDIDA") {
-                        mesaDiv.classList.add('agotada');
-                    } else {
-                        mesaDiv.classList.remove('agotada');
+                    if (mesaDiv) {
+                        if (estado === "VENDIDA") {
+                            mesaDiv.classList.add('agotada');
+                        } else {
+                            mesaDiv.classList.remove('agotada');
+                        }
                     }
                 }
             });
-        } catch (e) { console.error("Error:", e); }
+            console.log("Sincronización completada.");
+        } catch (e) { 
+            console.error("Error en la sincronización:", e); 
+        }
     }
+
     document.addEventListener('DOMContentLoaded', sincronizarMesas);
 </script>
 
