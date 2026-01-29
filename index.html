@@ -15,12 +15,34 @@
         --fuente: 'Inter', sans-serif;
     }
 
-    body, html { margin: 0; padding: 0; width: 100%; height: 100%; overflow: hidden; background: #f0f0f0; font-family: var(--fuente); }
-    #viewport { width: 100vw; height: 100vh; overflow: auto; display: block; }
-    #container { position: relative; transform-origin: 0 0; transition: transform 0.3s ease; display: inline-block; }
+    body, html { margin: 0; padding: 0; width: 100%; height: 100%; overflow: hidden; background: #d1d1d1; font-family: var(--fuente); }
+    
+    /* VIEWPORT: Centra el contenido cuando el zoom es pequeño */
+    #viewport { 
+        width: 100vw; 
+        height: 100vh; 
+        overflow: auto; 
+        display: flex;
+        align-items: center; 
+        justify-content: center;
+        background: #d1d1d1;
+    }
+
+    /* Estilo de las barras de scroll para que no sean molestas */
+    #viewport::-webkit-scrollbar { width: 14px; height: 14px; }
+    #viewport::-webkit-scrollbar-track { background: #f0f0f0; }
+    #viewport::-webkit-scrollbar-thumb { background: #bbb; border-radius: 10px; border: 3px solid #f0f0f0; }
+
+    #container { 
+        position: relative; 
+        transform-origin: center center; /* Zoom desde el centro */
+        transition: transform 0.2s ease-out; 
+        display: inline-block;
+    }
+
     img { width: 10169px; height: auto; display: block; image-rendering: high-quality; }
 
-    /* MESAS - Colliders con corrección de Z-Index */
+    /* MESAS */
     .mesa { 
         position: absolute; border: 2px solid var(--verde-base); 
         background: rgba(46, 204, 113, 0.25); box-sizing: border-box; 
@@ -32,14 +54,13 @@
         border-color: var(--rojo-sold) !important;
     }
 
-    /* SOLUCIÓN AL SOLAPAMIENTO: Al hacer hover, la mesa sube al frente de todas */
     .mesa:hover { 
         z-index: 9999 !important; 
         border-color: white; 
         box-shadow: 0 0 20px rgba(255,255,255,0.5); 
     }
 
-    /* CONTENEDOR DEL TOOLTIP (ESTILO TABLA REAL) */
+    /* TOOLTIP */
     .custom-tooltip-wrapper {
         position: absolute; bottom: 140%; left: 50%;
         transform: translateX(-50%) translateY(10px);
@@ -48,21 +69,14 @@
         opacity: 0; pointer-events: none; transition: all 0.2s ease;
         overflow: hidden; display: flex; flex-direction: column;
     }
-
     .mesa:hover .custom-tooltip-wrapper { opacity: 1; transform: translateX(-50%) translateY(0); }
 
     .tooltip-row { display: flex; border-bottom: 1px solid #edf2f7; background: white; }
     .tooltip-cell { flex: 1; padding: 18px 10px; display: flex; flex-direction: column; align-items: center; }
     .tooltip-cell:first-child { border-right: 1px solid #edf2f7; }
-    
     .tooltip-label { color: var(--text-gray); font-size: 14px; font-weight: 600; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 4px; }
     .tooltip-value { font-size: 26px; font-weight: 800; color: #2d3748; }
-
-    .tooltip-footer { 
-        padding: 14px; font-size: 18px; font-weight: 700; color: white;
-        background: var(--verde-deep); display: flex; justify-content: center;
-    }
-
+    .tooltip-footer { padding: 14px; font-size: 18px; font-weight: 700; color: white; background: var(--verde-deep); display: flex; justify-content: center; }
     .mesa.agotada .tooltip-footer { background: var(--rojo-sold); }
 
     /* CONTROLES */
@@ -91,8 +105,8 @@
             <button class="nav-btn" style="grid-column:2; grid-row:3" onclick="move('down')">↓</button>
         </div>
         <div class="zoom-pill">
-            <button class="action-btn" onclick="zoom(1.4)">+</button>
-            <button class="action-btn" onclick="zoom(0.7)">-</button>
+            <button class="action-btn" onclick="zoom(1.25)">+</button>
+            <button class="action-btn" onclick="zoom(0.8)">-</button>
             <button class="action-btn" style="width:auto; padding:0 15px; font-size:11px;" onclick="fit()">FIT</button>
         </div>
     </div>
@@ -102,39 +116,28 @@
     const container = document.getElementById('container');
     const viewport = document.getElementById('viewport');
     
-    // 1. URL limpia para evitar errores de seguridad (CORS)
     const URL_CSV = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vSuA_zpd7Ays5Xt9MDPQzkzCbxj8s0SaDgQGhuxcthtMl59F3H9oWipgKfsUmbiDloop2b43rqoq8CG/pub?gid=0&single=true&output=csv';
 
     async function cargarMesas() {
         try {
-            // Usamos un pequeño truco de tiempo solo para el archivo local (mesas.html)
             const respHTML = await fetch('mesas.html?v=' + new Date().getTime());
             const html = await respHTML.text();
-            const capa = document.getElementById('capa-mesas');
-            capa.innerHTML = html;
+            document.getElementById('capa-mesas').innerHTML = html;
 
-            // Llamamos a la sincronización
             await sincronizarConExcel();
 
-            // Generamos los tooltips
-            const mesas = capa.querySelectorAll('.mesa');
+            const mesas = document.querySelectorAll('.mesa');
             mesas.forEach(m => {
                 const info = m.getAttribute('data-info') || ""; 
                 const parts = info.split('-');
-                
                 let section = parts.length >= 2 ? parts[0] + "-" + parts[1] : info;
                 let tableNum = parts.length >= 3 ? parts[2] : "0";
 
-                let type = "Commercial Table";
-                let price = "175,00 €";
+                let type = "Commercial Table", price = "175,00 €";
+                const isTCG = ["TCG-A", "TCG-B", "TCG-C", "TCG-D", "TCG-E", "TCG-F"].includes(section);
+                const isSport = (section === "SPORT CARDS-A" || section === "SPORT CARDS-C");
 
-                const isTCGCollector = ["TCG-A", "TCG-B", "TCG-C", "TCG-D", "TCG-E", "TCG-F"].includes(section);
-                const isSportCollector = (section === "SPORT CARDS-A" || section === "SPORT CARDS-C");
-
-                if (isTCGCollector || isSportCollector) {
-                    type = "Collector Table";
-                    price = "70,00 €";
-                }
+                if (isTCG || isSport) { type = "Collector Table"; price = "70,00 €"; }
 
                 const isAgotada = m.classList.contains('agotada');
                 const footerText = isAgotada ? "SOLD OUT" : `${type}  •  ${price}`;
@@ -142,20 +145,11 @@
                 m.innerHTML = `
                     <div class="custom-tooltip-wrapper">
                         <div class="tooltip-row">
-                            <div class="tooltip-cell">
-                                <span class="tooltip-label">Section</span>
-                                <span class="tooltip-value">${section}</span>
-                            </div>
-                            <div class="tooltip-cell">
-                                <span class="tooltip-label">Table</span>
-                                <span class="tooltip-value">${tableNum}</span>
-                            </div>
+                            <div class="tooltip-cell"><span class="tooltip-label">Section</span><span class="tooltip-value">${section}</span></div>
+                            <div class="tooltip-cell"><span class="tooltip-label">Table</span><span class="tooltip-value">${tableNum}</span></div>
                         </div>
-                        <div class="tooltip-footer">
-                            ${footerText}
-                        </div>
-                    </div>
-                `;
+                        <div class="tooltip-footer">${footerText}</div>
+                    </div>`;
             });
 
             fit();
@@ -163,50 +157,41 @@
     }
 
     async function sincronizarConExcel() {
-    try {
-        // Añadimos el tiempo de una forma que Google no bloquee (CORS)
-        const separador = URL_CSV.includes('?') ? '&' : '?';
-        const urlFinal = URL_CSV + separador + 'cache_ignore=' + Date.now();
+        try {
+            const urlFinal = URL_CSV + (URL_CSV.includes('?') ? '&' : '?') + 'cache_ignore=' + Date.now();
+            const respuesta = await fetch(urlFinal, { method: 'GET', mode: 'cors', cache: 'no-cache' });
+            const texto = await respuesta.text();
+            const filas = texto.split(/\r?\n/);
 
-        const respuesta = await fetch(urlFinal, {
-            method: 'GET',
-            mode: 'cors',
-            cache: 'no-cache'
-        });
-
-        const texto = await respuesta.text();
-        const filas = texto.split(/\r?\n/);
-
-        filas.forEach((fila, index) => {
-            if (index === 0 || !fila.trim()) return;
-            const columnas = fila.split(/,(?=(?:(?:[^"]*"){2})*[^"]*$)/);
-            
-            if (columnas.length >= 3) {
-                const estado = columnas[1].replace(/["']/g, "").trim().toUpperCase(); 
-                const idMesa = columnas[2].replace(/["']/g, "").trim(); 
-
-                const mesaDiv = document.querySelector(`[data-info="${idMesa}"]`);
-                if (mesaDiv) {
-                    if (estado === "VENDIDA") {
-                        mesaDiv.classList.add('agotada');
-                    } else {
-                        mesaDiv.classList.remove('agotada');
+            filas.forEach((fila, index) => {
+                if (index === 0 || !fila.trim()) return;
+                const columnas = fila.split(/,(?=(?:(?:[^"]*"){2})*[^"]*$)/);
+                if (columnas.length >= 3) {
+                    const estado = columnas[1].replace(/["']/g, "").trim().toUpperCase(); 
+                    const idMesa = columnas[2].replace(/["']/g, "").trim(); 
+                    const mesaDiv = document.querySelector(`[data-info="${idMesa}"]`);
+                    if (mesaDiv) {
+                        if (estado === "VENDIDA") mesaDiv.classList.add('agotada');
+                        else mesaDiv.classList.remove('agotada');
                     }
                 }
-            }
-        });
-        console.log("Sincronización forzada completada");
-    } catch (err) {
-        console.error("Error en sincronización forzada:", err);
+            });
+            console.log("Sincronización completada");
+        } catch (err) { console.error("Error sincronizando:", err); }
     }
-}
+
     function zoom(f) { 
         let newScale = scale * f;
-        if (newScale >= 0.01 && newScale <= 1) {
+        // LIMITES: No menos del 35% del ancho de pantalla, no más del 150%
+        let minScale = (window.innerWidth / 10169) * 0.35; 
+        if (newScale >= minScale && newScale <= 1.5) {
             scale = newScale;
             container.style.transform = `scale(${scale})`; 
+            // Ocultar scroll si el mapa cabe entero
+            viewport.style.overflow = scale <= (window.innerWidth / 10169) ? "hidden" : "auto";
         }
     }
+
     function move(dir) {
         const step = 400;
         if(dir === 'up') viewport.scrollTop -= step;
@@ -214,10 +199,12 @@
         if(dir === 'left') viewport.scrollLeft -= step;
         if(dir === 'right') viewport.scrollLeft += step;
     }
+
     function fit() { 
-        scale = (window.innerWidth / 10169) * 0.8; 
+        scale = (window.innerWidth / 10169) * 0.95; 
         container.style.transform = `scale(${scale})`;
         viewport.scrollTo(0,0);
+        viewport.style.overflow = "hidden";
     }
 
     window.onload = cargarMesas;
