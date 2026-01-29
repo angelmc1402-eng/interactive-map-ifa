@@ -17,7 +17,7 @@
 
     body, html { margin: 0; padding: 0; width: 100%; height: 100%; overflow: hidden; background: #f0f0f0; font-family: var(--fuente); }
     #viewport { width: 100vw; height: 100vh; overflow: auto; display: block; }
-    #container { position: relative; transform-origin: 0 0; transition: transform 0.3s ease; display: inline-block; }
+    #container { position: relative; transform-origin: 0 0; transition: transform 0.3s ease-out; display: inline-block; }
     img { width: 10169px; height: auto; display: block; image-rendering: high-quality; }
 
     /* MESAS - Colliders */
@@ -180,24 +180,25 @@ function zoom(f) {
         let newScale = scale * f;
         
         // LÍMITES: Mínimo 0.05 (lejos) - Máximo 0.6 (cerca, pero no gigante)
-        if (newScale >= 0.05 && newScale <= 0.6) {
-            
-            // 1. Calculamos dónde está el centro de tu pantalla AHORA MISMO
+        if (newScale >= 0.1 && newScale <= 0.75) {
+// 1. Calcular centro
             const viewportWidth = viewport.clientWidth;
             const viewportHeight = viewport.clientHeight;
-            
-            // Obtenemos la coordenada central del mapa respecto a lo que estás viendo
             const centerX = (viewport.scrollLeft + (viewportWidth / 2)) / scale;
             const centerY = (viewport.scrollTop + (viewportHeight / 2)) / scale;
 
-            // 2. Aplicamos el nuevo tamaño
+            // 2. Aplicar zoom
             scale = newScale;
             container.style.transform = `scale(${scale})`;
 
-            // 3. Mágicamente ajustamos el scroll para volver a centrar ese punto
-            // Nueva posición = (Punto central * Nuevo Zoom) - La mitad de tu pantalla
-            viewport.scrollLeft = (centerX * scale) - (viewportWidth / 2);
-            viewport.scrollTop = (centerY * scale) - (viewportHeight / 2);
+            // 3. Mover barras SUAVEMENTE (behavior: 'smooth')
+            const newScrollLeft = (centerX * scale) - (viewportWidth / 2);
+            const newScrollTop = (centerY * scale) - (viewportHeight / 2);
+
+            viewport.scrollTo({
+                left: newScrollLeft,
+                top: newScrollTop,
+                behavior: 'smooth' // <--- ESTO ES LA CLAVE DE LA SUAVIDAD
         }
     }
 
