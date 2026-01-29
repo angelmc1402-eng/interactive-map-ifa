@@ -187,7 +187,7 @@
 function zoom(f) { 
         let newScale = scale * f;
         
-        // LÍMITES: 0.10 (Lejos) - 0.75 (Cerca)
+        // LÍMITES: 0.01 (Lejos) - 0.75 (Cerca)
         if (newScale >= 0.10 && newScale <= 0.75) {
             scale = newScale;
             // Solo aplicamos escala. 
