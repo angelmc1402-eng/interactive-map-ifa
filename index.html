@@ -187,12 +187,24 @@
 function zoom(f) { 
         let newScale = scale * f;
         
-        // LÍMITES: 0.01 (Lejos) - 0.75 (Cerca)
+        // LÍMITES: 0.10 (Lejos) - 0.75 (Cerca)
         if (newScale >= 0.10 && newScale <= 0.75) {
+            
+            // 1. Calcular el centro exacto de lo que estás mirando
+            const viewportWidth = viewport.clientWidth;
+            const viewportHeight = viewport.clientHeight;
+            const centerX = (viewport.scrollLeft + (viewportWidth / 2)) / scale;
+            const centerY = (viewport.scrollTop + (viewportHeight / 2)) / scale;
+
+            // 2. Aplicar el nuevo tamaño
             scale = newScale;
-            // Solo aplicamos escala. 
-            // Quitamos el cálculo de scroll automático porque rompe los móviles
-            container.style.transform = `scale(${scale})`; 
+            container.style.transform = `scale(${scale})`;
+
+            // 3. Recolocar el scroll INSTANTÁNEAMENTE (sin 'smooth' para que el móvil vuele)
+            const newScrollLeft = (centerX * scale) - (viewportWidth / 2);
+            const newScrollTop = (centerY * scale) - (viewportHeight / 2);
+
+            viewport.scrollTo(newScrollLeft, newScrollTop);
         }
     }
     function move(dir) {
