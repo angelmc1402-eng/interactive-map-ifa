@@ -23,27 +23,27 @@
         overflow: auto; 
         position: relative;
         background: #d1d1d1;
-        /* Scroll suave para los botones del joystick */
-        scroll-behavior: smooth; 
     }
 
-    /* Estilo de las barras de scroll: anchas y fáciles de usar */
-    #viewport::-webkit-scrollbar { width: 16px; height: 16px; }
-    #viewport::-webkit-scrollbar-track { background: #e0e0e0; }
-    #viewport::-webkit-scrollbar-thumb { background: #999; border-radius: 10px; border: 3px solid #e0e0e0; }
-
+    /* Contenedor sin padding para que no se descuadre nada */
     #container { 
         position: relative; 
-        padding: 400px; /* Colchón de seguridad para ver los bordes */
         transform-origin: 0 0; 
-        transition: transform 0.25s ease-out; 
-        display: inline-block;
-        background: #d1d1d1;
+        transition: transform 0.2s ease-out; 
+        display: block;
+        /* El "aire" lo damos con un margen a la derecha y abajo para poder navegar */
+        margin-right: 500px;
+        margin-bottom: 500px;
     }
+
+    /* Estilo de barras de scroll */
+    #viewport::-webkit-scrollbar { width: 15px; height: 15px; }
+    #viewport::-webkit-scrollbar-track { background: #e0e0e0; }
+    #viewport::-webkit-scrollbar-thumb { background: #888; border-radius: 10px; }
 
     img { width: 10169px; height: auto; display: block; image-rendering: high-quality; }
 
-    /* MESAS */
+    /* COLLIDERS (MESAS) */
     .mesa { 
         position: absolute; border: 2px solid var(--verde-base); 
         background: rgba(46, 204, 113, 0.25); box-sizing: border-box; 
@@ -54,7 +54,6 @@
         background: rgba(231, 76, 60, 0.4) !important;
         border-color: var(--rojo-sold) !important;
     }
-
     .mesa:hover { z-index: 9999 !important; border-color: white; box-shadow: 0 0 20px rgba(255,255,255,0.5); }
 
     /* TOOLTIP */
@@ -176,16 +175,15 @@
 
     function zoom(f) { 
         let newScale = scale * f;
-        // Limite mínimo: el 20% del ancho de la pantalla para que no se pierda
-        let minScale = (window.innerWidth / 10169) * 0.2; 
-        if (newScale >= minScale && newScale <= 1.2) {
+        let minScale = (window.innerWidth / 10169) * 0.4; 
+        if (newScale >= minScale && newScale <= 1.5) {
             scale = newScale;
             container.style.transform = `scale(${scale})`; 
         }
     }
 
     function move(dir) {
-        const step = 600; // Movimiento más rápido
+        const step = 500;
         if(dir === 'up') viewport.scrollTop -= step;
         if(dir === 'down') viewport.scrollTop += step;
         if(dir === 'left') viewport.scrollLeft -= step;
@@ -193,14 +191,9 @@
     }
 
     function fit() { 
-        // Ajuste inicial cómodo
-        scale = (window.innerWidth / 10169) * 0.75; 
+        scale = (window.innerWidth / 10169); 
         container.style.transform = `scale(${scale})`;
-        
-        // Posicionamiento inicial cerca de la esquina superior izquierda pero con margen
-        setTimeout(() => {
-            viewport.scrollTo({ top: 100, left: 100, behavior: 'auto' });
-        }, 150);
+        viewport.scrollTo(0,0);
     }
 
     window.onload = cargarMesas;
