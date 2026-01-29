@@ -17,27 +17,28 @@
 
     body, html { margin: 0; padding: 0; width: 100%; height: 100%; overflow: hidden; background: #d1d1d1; font-family: var(--fuente); }
     
-    /* VIEWPORT: Centra el contenido cuando el zoom es pequeño */
     #viewport { 
         width: 100vw; 
         height: 100vh; 
         overflow: auto; 
-        display: flex;
-        align-items: center; 
-        justify-content: center;
+        position: relative;
         background: #d1d1d1;
+        /* Scroll suave para los botones del joystick */
+        scroll-behavior: smooth; 
     }
 
-    /* Estilo de las barras de scroll para que no sean molestas */
-    #viewport::-webkit-scrollbar { width: 14px; height: 14px; }
-    #viewport::-webkit-scrollbar-track { background: #f0f0f0; }
-    #viewport::-webkit-scrollbar-thumb { background: #bbb; border-radius: 10px; border: 3px solid #f0f0f0; }
+    /* Estilo de las barras de scroll: anchas y fáciles de usar */
+    #viewport::-webkit-scrollbar { width: 16px; height: 16px; }
+    #viewport::-webkit-scrollbar-track { background: #e0e0e0; }
+    #viewport::-webkit-scrollbar-thumb { background: #999; border-radius: 10px; border: 3px solid #e0e0e0; }
 
     #container { 
         position: relative; 
-        transform-origin: center center; /* Zoom desde el centro */
-        transition: transform 0.2s ease-out; 
+        padding: 400px; /* Colchón de seguridad para ver los bordes */
+        transform-origin: 0 0; 
+        transition: transform 0.25s ease-out; 
         display: inline-block;
+        background: #d1d1d1;
     }
 
     img { width: 10169px; height: auto; display: block; image-rendering: high-quality; }
@@ -54,11 +55,7 @@
         border-color: var(--rojo-sold) !important;
     }
 
-    .mesa:hover { 
-        z-index: 9999 !important; 
-        border-color: white; 
-        box-shadow: 0 0 20px rgba(255,255,255,0.5); 
-    }
+    .mesa:hover { z-index: 9999 !important; border-color: white; box-shadow: 0 0 20px rgba(255,255,255,0.5); }
 
     /* TOOLTIP */
     .custom-tooltip-wrapper {
@@ -105,8 +102,8 @@
             <button class="nav-btn" style="grid-column:2; grid-row:3" onclick="move('down')">↓</button>
         </div>
         <div class="zoom-pill">
-            <button class="action-btn" onclick="zoom(1.25)">+</button>
-            <button class="action-btn" onclick="zoom(0.8)">-</button>
+            <button class="action-btn" onclick="zoom(1.3)">+</button>
+            <button class="action-btn" onclick="zoom(0.7)">-</button>
             <button class="action-btn" style="width:auto; padding:0 15px; font-size:11px;" onclick="fit()">FIT</button>
         </div>
     </div>
@@ -115,7 +112,6 @@
     let scale = 1;
     const container = document.getElementById('container');
     const viewport = document.getElementById('viewport');
-    
     const URL_CSV = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vSuA_zpd7Ays5Xt9MDPQzkzCbxj8s0SaDgQGhuxcthtMl59F3H9oWipgKfsUmbiDloop2b43rqoq8CG/pub?gid=0&single=true&output=csv';
 
     async function cargarMesas() {
@@ -136,7 +132,6 @@
                 let type = "Commercial Table", price = "175,00 €";
                 const isTCG = ["TCG-A", "TCG-B", "TCG-C", "TCG-D", "TCG-E", "TCG-F"].includes(section);
                 const isSport = (section === "SPORT CARDS-A" || section === "SPORT CARDS-C");
-
                 if (isTCG || isSport) { type = "Collector Table"; price = "70,00 €"; }
 
                 const isAgotada = m.classList.contains('agotada');
@@ -153,7 +148,7 @@
             });
 
             fit();
-        } catch (e) { console.error("Error cargando mesas:", e); }
+        } catch (e) { console.error("Error:", e); }
     }
 
     async function sincronizarConExcel() {
@@ -176,24 +171,21 @@
                     }
                 }
             });
-            console.log("Sincronización completada");
         } catch (err) { console.error("Error sincronizando:", err); }
     }
 
     function zoom(f) { 
         let newScale = scale * f;
-        // LIMITES: No menos del 35% del ancho de pantalla, no más del 150%
-        let minScale = (window.innerWidth / 10169) * 0.35; 
-        if (newScale >= minScale && newScale <= 1.5) {
+        // Limite mínimo: el 20% del ancho de la pantalla para que no se pierda
+        let minScale = (window.innerWidth / 10169) * 0.2; 
+        if (newScale >= minScale && newScale <= 1.2) {
             scale = newScale;
             container.style.transform = `scale(${scale})`; 
-            // Ocultar scroll si el mapa cabe entero
-            viewport.style.overflow = scale <= (window.innerWidth / 10169) ? "hidden" : "auto";
         }
     }
 
     function move(dir) {
-        const step = 400;
+        const step = 600; // Movimiento más rápido
         if(dir === 'up') viewport.scrollTop -= step;
         if(dir === 'down') viewport.scrollTop += step;
         if(dir === 'left') viewport.scrollLeft -= step;
@@ -201,10 +193,14 @@
     }
 
     function fit() { 
-        scale = (window.innerWidth / 10169) * 0.95; 
+        // Ajuste inicial cómodo
+        scale = (window.innerWidth / 10169) * 0.75; 
         container.style.transform = `scale(${scale})`;
-        viewport.scrollTo(0,0);
-        viewport.style.overflow = "hidden";
+        
+        // Posicionamiento inicial cerca de la esquina superior izquierda pero con margen
+        setTimeout(() => {
+            viewport.scrollTo({ top: 100, left: 100, behavior: 'auto' });
+        }, 150);
     }
 
     window.onload = cargarMesas;
