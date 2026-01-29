@@ -178,7 +178,7 @@
 
     function zoom(f) { 
         let newScale = scale * f;
-        if (newScale >= 0.05 && newScale <= 1.5) {
+        if (newScale >= 0.1 && newScale <= 1) {
             scale = newScale;
             container.style.transform = `scale(${scale})`; 
         }
