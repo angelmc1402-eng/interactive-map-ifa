@@ -176,11 +176,28 @@
         } catch (err) { console.error("Error:", err); }
     }
 
-    function zoom(f) { 
+function zoom(f) { 
         let newScale = scale * f;
-        if (newScale >= 0.1 && newScale <= 1) {
+        
+        // LÍMITES: Mínimo 0.05 (lejos) - Máximo 0.6 (cerca, pero no gigante)
+        if (newScale >= 0.05 && newScale <= 0.6) {
+            
+            // 1. Calculamos dónde está el centro de tu pantalla AHORA MISMO
+            const viewportWidth = viewport.clientWidth;
+            const viewportHeight = viewport.clientHeight;
+            
+            // Obtenemos la coordenada central del mapa respecto a lo que estás viendo
+            const centerX = (viewport.scrollLeft + (viewportWidth / 2)) / scale;
+            const centerY = (viewport.scrollTop + (viewportHeight / 2)) / scale;
+
+            // 2. Aplicamos el nuevo tamaño
             scale = newScale;
-            container.style.transform = `scale(${scale})`; 
+            container.style.transform = `scale(${scale})`;
+
+            // 3. Mágicamente ajustamos el scroll para volver a centrar ese punto
+            // Nueva posición = (Punto central * Nuevo Zoom) - La mitad de tu pantalla
+            viewport.scrollLeft = (centerX * scale) - (viewportWidth / 2);
+            viewport.scrollTop = (centerY * scale) - (viewportHeight / 2);
         }
     }
 
