@@ -23,14 +23,16 @@
         height: 100vh; 
         overflow: auto; 
         display: block;
-        -webkit-overflow-scrolling: touch; /* Clave para iPhone */
+        -webkit-overflow-scrolling: touch; 
     }
 
     #container { 
         position: relative; 
         transform-origin: 0 0; 
-        transition: transform 0.2s ease-out; /* Animación suave simple */
+        transition: transform 0.2s ease-out; 
         display: inline-block;
+        /* Truco anti-parpadeo para el mapa completo */
+        transform: translateZ(0);
     }
 
     img { width: 10169px; height: auto; display: block; image-rendering: high-quality; }
@@ -39,7 +41,10 @@
     .mesa { 
         position: absolute; border: 2px solid var(--verde-base); 
         background: rgba(46, 204, 113, 0.25); box-sizing: border-box; 
-        z-index: 10; border-radius: 4px; cursor: pointer; 
+        z-index: 10; /* Nivel base */
+        border-radius: 4px; cursor: pointer; 
+        /* Truco para que cada mesa tenga su propia capa y no parpadee */
+        transform: translateZ(0); 
     }
     .mesa.sport { border-color: var(--verde-sport); background: rgba(0, 255, 180, 0.25); }
     .mesa.agotada {
@@ -47,9 +52,12 @@
         border-color: var(--rojo-sold) !important;
     }
 
-    /* Hover solo en PC */
-    @media (hover: hover) {
-        .mesa:hover { z-index: 9999 !important; border-color: white; box-shadow: 0 0 20px rgba(255,255,255,0.5); }
+    /* --- CORRECCIÓN Z-INDEX (EL FALLO ESTABA AQUÍ) --- */
+    /* Ahora aplicamos la elevación tanto en HOVER (PC) como en ACTIVE (Móvil al tocar) */
+    .mesa:hover, .mesa:active { 
+        z-index: 9999 !important; /* ¡Subir al cielo! */
+        border-color: white; 
+        box-shadow: 0 0 20px rgba(255,255,255,0.5); 
     }
 
     /* TOOLTIP */
@@ -60,8 +68,10 @@
         box-shadow: 0 20px 50px rgba(0,0,0,0.25);
         opacity: 0; pointer-events: none; transition: all 0.2s ease;
         overflow: hidden; display: flex; flex-direction: column;
+        z-index: 10000; /* Aseguramos que el tooltip esté encima de la propia mesa */
     }
 
+    /* Mostrar tooltip al pasar ratón o tocar */
     .mesa:hover .custom-tooltip-wrapper,
     .mesa:active .custom-tooltip-wrapper { opacity: 1; transform: translateX(-50%) translateY(0); }
 
@@ -171,10 +181,9 @@
         } catch (err) { console.error("Error:", err); }
     }
 
-    // --- FUNCIÓN SIMPLE Y SEGURA ---
     function zoom(f) { 
         let newScale = scale * f;
-
+        // Límite 0.01 necesario para móviles
         if (newScale >= 0.01 && newScale <= 0.8) {
             scale = newScale;
             container.style.transform = `scale(${scale})`; 
@@ -190,7 +199,6 @@
     }
 
     function fit() { 
-        // Ajuste inicial
         scale = (window.innerWidth / 10169) * 0.9; 
         if(scale < 0.01) scale = 0.01;
         container.style.transform = `scale(${scale})`;
