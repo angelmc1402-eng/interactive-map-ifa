@@ -136,11 +136,11 @@
                 let section = parts.length >= 2 ? parts[0] + "-" + parts[1] : info;
                 let tableNum = parts.length >= 3 ? parts[2] : "0";
 
-                let type = "Commercial Table", price = "175,00 €";
+                let type = "Commercial Table", price = "250,00 €";
                 const isTCG = ["TCG-A", "TCG-B", "TCG-C", "TCG-D", "TCG-E", "TCG-F"].includes(section);
                 const isSport = (section === "SPORT CARDS-A" || section === "SPORT CARDS-C");
 
-                if (isTCG || isSport) { type = "Collector Table"; price = "70,00 €"; }
+                if (isTCG || isSport) { type = "Collector Table"; price = "100,00 €"; }
 
                 const isAgotada = m.classList.contains('agotada');
                 const footerText = isAgotada ? "SOLD OUT" : `${type}  •  ${price}`;
