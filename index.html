@@ -1,125 +1,185 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="es">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>HALL 1 - Interactive Map Pro</title>
+    <title>HALL 1 - Ultimate Precision Map</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
 <style>
     :root {
         --verde-base: #2ecc71;
         --verde-deep: #27ae60;
-        --verde-sport: #00ffb4;
+        --verde-sport: #00ffb4; /* Color especial para Sport Cards */
         --rojo-sold: #e74c3c;
         --text-gray: #95a5a6;
         --fuente: 'Inter', sans-serif;
+        --map-scale: 1; 
     }
 
-    /* Reset y Scroll suave en móvil */
-    body, html { margin: 0; padding: 0; width: 100%; height: 100%; overflow: hidden; background: #f0f0f0; font-family: var(--fuente); }
+    body, html { margin: 0; padding: 0; width: 100%; height: 100%; overflow: hidden; background: #e5e7eb; font-family: var(--fuente); }
     
-    #viewport { 
-        width: 100vw; 
-        height: 100vh; 
-        overflow: auto; 
-        display: block;
-        -webkit-overflow-scrolling: touch; 
+    #map-wrapper { 
+        width: 100vw; height: 100vh; 
+        position: relative; overflow: hidden;
     }
 
     #container { 
-        position: relative; 
+        position: absolute; 
+        top: 0; left: 0;
         transform-origin: 0 0; 
-        transition: transform 0.2s ease-out; 
+        transition: transform 0.4s cubic-bezier(0.25, 1, 0.5, 1); 
+        cursor: crosshair; 
+        touch-action: none; 
         display: inline-block;
-        /* Truco anti-parpadeo para el mapa completo */
-        transform: translateZ(0);
     }
 
-    img { width: 10169px; height: auto; display: block; image-rendering: high-quality; }
+    #map-img { display: block; image-rendering: high-quality; max-width: none; user-select: none; -webkit-user-drag: none; }
 
-    /* MESAS */
+    body.is-state-1 #container, body.is-state-2 #container { cursor: grab; }
+    body.is-state-1 #container:active, body.is-state-2 #container:active { cursor: grabbing; }
+
+    /* --- MESAS --- */
     .mesa { 
-        position: absolute; border: 2px solid var(--verde-base); 
-        background: rgba(46, 204, 113, 0.25); box-sizing: border-box; 
-        z-index: 10; /* Nivel base */
-        border-radius: 4px; cursor: pointer; 
-        /* Truco para que cada mesa tenga su propia capa y no parpadee */
-        transform: translateZ(0); 
+        position: absolute; 
+        border: 2px solid var(--verde-base); 
+        background: rgba(46, 204, 113, 0.3); 
+        box-sizing: border-box; 
+        border-radius: 2px; 
+        pointer-events: none; 
     }
-    .mesa.sport { border-color: var(--verde-sport); background: rgba(0, 255, 180, 0.25); }
-    .mesa.agotada {
-        background: rgba(231, 76, 60, 0.4) !important;
-        border-color: var(--rojo-sold) !important;
-    }
+    
+    body.is-state-1 .mesa, body.is-state-2 .mesa { pointer-events: auto; cursor: pointer; }
+    
+    .mesa.sport { border-color: var(--verde-sport); background: rgba(0, 255, 180, 0.3); }
+    .mesa.commercial { border-color: #3498db; background: rgba(52, 152, 219, 0.3); }
+    .mesa.agotada { background: rgba(231, 76, 60, 0.4) !important; border-color: var(--rojo-sold) !important; cursor: not-allowed; }
 
-    /* --- CORRECCIÓN Z-INDEX (EL FALLO ESTABA AQUÍ) --- */
-    /* Ahora aplicamos la elevación tanto en HOVER (PC) como en ACTIVE (Móvil al tocar) */
-    .mesa:hover, .mesa:active { 
-        z-index: 9999 !important; /* ¡Subir al cielo! */
-        border-color: white; 
-        box-shadow: 0 0 20px rgba(255,255,255,0.5); 
+    body.is-state-1 .mesa:hover, body.is-state-1 .mesa:active,
+    body.is-state-2 .mesa:hover, body.is-state-2 .mesa:active { 
+        z-index: 999; border-color: white; 
+        box-shadow: 0 0 20px rgba(0,0,0,0.5); background: rgba(46, 204, 113, 0.7);
     }
+    body.is-state-1 .mesa.sport:hover, body.is-state-2 .mesa.sport:hover { background: rgba(0, 255, 180, 0.7); }
+    body.is-state-1 .mesa.commercial:hover, body.is-state-2 .mesa.commercial:hover { background: rgba(52, 152, 219, 0.7); }
 
-    /* TOOLTIP */
+    /* --- TOOLTIPS (3 COLUMNAS) --- */
     .custom-tooltip-wrapper {
-        position: absolute; bottom: 140%; left: 50%;
-        transform: translateX(-50%) translateY(10px);
-        width: 420px; background: white; border-radius: 14px;
-        box-shadow: 0 20px 50px rgba(0,0,0,0.25);
-        opacity: 0; pointer-events: none; transition: all 0.2s ease;
+        position: absolute; bottom: 150%; left: 50%;
+        transform: translateX(-50%) translateY(10px) scale(calc(1 / var(--map-scale)));
+        transform-origin: bottom center;
+        width: 360px; 
+        background: white; border-radius: 12px;
+        box-shadow: 0 20px 50px rgba(0,0,0,0.3);
+        opacity: 0; pointer-events: none; transition: opacity 0.2s ease, transform 0.2s ease;
         overflow: hidden; display: flex; flex-direction: column;
-        z-index: 10000; /* Aseguramos que el tooltip esté encima de la propia mesa */
+        z-index: 1000; 
     }
 
-    /* Mostrar tooltip al pasar ratón o tocar */
-    .mesa:hover .custom-tooltip-wrapper,
-    .mesa:active .custom-tooltip-wrapper { opacity: 1; transform: translateX(-50%) translateY(0); }
+    body.is-state-1 .mesa:hover .custom-tooltip-wrapper, body.is-state-1 .mesa:active .custom-tooltip-wrapper,
+    body.is-state-2 .mesa:hover .custom-tooltip-wrapper, body.is-state-2 .mesa:active .custom-tooltip-wrapper { 
+        opacity: 1; transform: translateX(-50%) translateY(0) scale(calc(1 / var(--map-scale))); pointer-events: auto;
+    }
 
-    .tooltip-row { display: flex; border-bottom: 1px solid #edf2f7; background: white; }
-    .tooltip-cell { flex: 1; padding: 18px 10px; display: flex; flex-direction: column; align-items: center; }
-    .tooltip-cell:first-child { border-right: 1px solid #edf2f7; }
-    .tooltip-label { color: var(--text-gray); font-size: 14px; font-weight: 600; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 4px; }
-    .tooltip-value { font-size: 26px; font-weight: 800; color: #2d3748; }
-    .tooltip-footer { padding: 14px; font-size: 18px; font-weight: 700; color: white; background: var(--verde-deep); display: flex; justify-content: center; }
+    .tooltip-row { display: flex; border-bottom: 1px solid #edf2f7; }
+    .tooltip-cell { flex: 1; padding: 12px 5px; display: flex; flex-direction: column; align-items: center; justify-content: center; }
+    .tooltip-cell:not(:last-child) { border-right: 1px solid #edf2f7; } 
+    
+    .tooltip-label { color: var(--text-gray); font-size: 10px; font-weight: 700; text-transform: uppercase; margin-bottom: 4px; letter-spacing: 0.5px;}
+    .tooltip-value { font-size: 15px; font-weight: 800; color: #1f2937; text-align: center; line-height: 1.1;}
+    
+    .tooltip-footer { padding: 14px; font-size: 15px; font-weight: 800; color: white; background: var(--verde-deep); text-align: center; }
     .mesa.agotada .tooltip-footer { background: var(--rojo-sold); }
+    .mesa.sport .tooltip-footer { background: #00b894; } /* Verde sport un poco más legible en texto */
+    .mesa.commercial .tooltip-footer { background: #3498db; }
 
-    /* CONTROLES */
-    .controls-wrapper { position: fixed; bottom: 30px; right: 30px; display: flex; flex-direction: column; gap: 15px; z-index: 10000; }
-    .joystick, .zoom-pill { background: white; padding: 12px; border-radius: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.1); }
-    .joystick { display: grid; grid-template-columns: repeat(3, 45px); gap: 5px; }
-    .zoom-pill { display: flex; gap: 8px; }
-    .nav-btn, .action-btn { width: 45px; height: 45px; border: none; background: #f0f0f0; border-radius: 10px; font-size: 18px; cursor: pointer; display: flex; align-items: center; justify-content: center; font-weight: bold; }
-    .nav-btn:hover, .action-btn:hover { background: var(--verde-base); color: white; }
+    /* --- MENÚ LATERAL (BACK) --- */
+    #side-menu {
+        position: fixed; 
+        right: -150px; 
+        bottom: 100px; 
+        transition: right 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275); 
+        z-index: 20000;
+        display: flex; flex-direction: column; gap: 10px;
+    }
+    #side-menu.visible { right: 30px; } 
+
+    .btn-back {
+        background: white; border: none; padding: 12px 20px; border-radius: 50px;
+        font-family: var(--fuente); font-weight: 800; font-size: 13px; color: #1f2937;
+        box-shadow: 0 10px 25px rgba(0,0,0,0.15); cursor: pointer;
+        display: flex; align-items: center; justify-content: center; gap: 8px; transition: all 0.2s;
+    }
+    .btn-back:hover { 
+        transform: scale(1.05); background: #f8fafc; color: var(--verde-deep); 
+    }
+
+    /* --- SELECTOR RÁPIDO DE ZOOM (UI FLOTANTE) --- */
+    #zoom-ui {
+        position: fixed; bottom: 30px; right: 30px;
+        background: white; padding: 6px; border-radius: 50px;
+        box-shadow: 0 10px 30px rgba(0,0,0,0.15); z-index: 20000;
+        display: flex; gap: 5px;
+    }
+    .zoom-btn {
+        width: 45px; height: 45px; border-radius: 50%; border: none;
+        background: transparent; font-weight: 800; font-family: var(--fuente); color: var(--text-gray);
+        cursor: pointer; transition: all 0.2s; font-size: 14px;
+    }
+    .zoom-btn:hover { background: #f1f5f9; color: #1f2937; }
+    .zoom-btn.active { background: #1f2937; color: white; box-shadow: 0 4px 10px rgba(0,0,0,0.2); }
+
+    /* --- LA LUPA MÁGICA --- */
+    #loupe {
+        position: fixed; width: 260px; height: 260px; border-radius: 50%;
+        border: 4px solid white; box-shadow: 0 15px 35px rgba(0,0,0,0.4), inset 0 0 15px rgba(0,0,0,0.2);
+        pointer-events: none; overflow: hidden; z-index: 15000; 
+        opacity: 0; display: none; background: #fff;
+        left: 0; top: 0; will-change: transform;
+    }
+    #loupe.visible { opacity: 1; display: block; }
+    #loupe-inner { position: absolute; transform-origin: 0 0; pointer-events: none; will-change: transform; }
+    #loupe .custom-tooltip-wrapper { display: none !important; }
+
+    @media(max-width: 768px) {
+        #side-menu { display: none; } 
+        #zoom-ui { right: 50%; transform: translateX(50%); bottom: 25px; }
+        .custom-tooltip-wrapper { width: 340px; }
+        #loupe { display: none !important; } 
+    }
 </style>
 </head>
-<body>
+<body class="is-state-0">
 
-    <div id="viewport">
+    <div id="map-wrapper">
         <div id="container">
-            <img src="Hall 1.png" alt="Map">
+            <img id="map-img" src="Hall 1.png" alt="Map Hall 1">
             <div id="capa-mesas"></div> 
         </div>
     </div>
 
-    <div class="controls-wrapper">
-        <div class="joystick">
-            <button class="nav-btn" style="grid-column:2" onclick="move('up')">↑</button>
-            <button class="nav-btn" style="grid-column:1; grid-row:2" onclick="move('left')">←</button>
-            <button class="nav-btn" style="grid-column:3; grid-row:2" onclick="move('right')">→</button>
-            <button class="nav-btn" style="grid-column:2; grid-row:3" onclick="move('down')">↓</button>
-        </div>
-        <div class="zoom-pill">
-            <button class="action-btn" onclick="zoom(1.3)">+</button>
-            <button class="action-btn" onclick="zoom(0.7)">-</button>
-            <button class="action-btn" style="width:auto; padding:0 15px; font-size:11px;" onclick="fit()">FIT</button>
-        </div>
+    <div id="loupe">
+        <div id="loupe-inner"></div>
+    </div>
+
+    <div id="side-menu">
+        <button class="btn-back" onclick="setZoomStateUI(0, event)">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                <circle cx="11" cy="11" r="8"></circle>
+                <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+                <line x1="8" y1="11" x2="14" y2="11"></line>
+            </svg>
+            BACK
+        </button>
+    </div>
+
+    <div id="zoom-ui">
+        <button class="zoom-btn active" onclick="setZoomStateUI(0, event)">x1</button>
+        <button class="zoom-btn" onclick="setZoomStateUI(1, event)">x2</button>
+        <button class="zoom-btn" onclick="setZoomStateUI(2, event)">x3</button>
     </div>
 
 <script>
-    let scale = 1;
-    const container = document.getElementById('container');
-    const viewport = document.getElementById('viewport');
-    
+    const diccionarioMesas = new Map();
     const URL_CSV = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vSuA_zpd7Ays5Xt9MDPQzkzCbxj8s0SaDgQGhuxcthtMl59F3H9oWipgKfsUmbiDloop2b43rqoq8CG/pub?gid=0&single=true&output=csv';
 
     async function cargarMesas() {
@@ -127,87 +187,281 @@
             const respHTML = await fetch('mesas.html?v=' + new Date().getTime());
             const html = await respHTML.text();
             document.getElementById('capa-mesas').innerHTML = html;
-            await sincronizarConExcel();
             
             const mesas = document.querySelectorAll('.mesa');
             mesas.forEach(m => {
                 const info = m.getAttribute('data-info') || ""; 
-                const parts = info.split('-');
-                let section = parts.length >= 2 ? parts[0] + "-" + parts[1] : info;
-                let tableNum = parts.length >= 3 ? parts[2] : "0";
+                diccionarioMesas.set(info, m); 
 
-                let type = "Commercial Table", price = "250,00 €";
+                const parts = info.split('-');
+                
+                let catName = parts[0] || "Unknown";
+                let zoneName = parts.length >= 2 ? parts[1] : "-";
+                let tableNum = parts.length >= 3 ? parts[2] : (parts[1] || "0"); 
+
+                // Nomenclatura específica del Hall 1
+                if(catName === "SPORT CARDS") catName = "Sport Cards";
+                if(catName === "TCG") catName = "TCG";
+                if(catName === "CORNER") catName = "Corner Table";
+
+                let type = "Commercial Table";
+                let price = "250,00 €";
+                
+                let section = parts.length >= 2 ? parts[0] + "-" + parts[1] : info;
                 const isTCG = ["TCG-A", "TCG-B", "TCG-C", "TCG-D", "TCG-E", "TCG-F"].includes(section);
                 const isSport = (section === "SPORT CARDS-A" || section === "SPORT CARDS-C");
 
-                if (isTCG || isSport) { type = "Collector Table"; price = "100,00 €"; }
+                if (isTCG || isSport) { 
+                    type = "Collector Table"; 
+                    price = "100,00 €"; 
+                } else {
+                    m.classList.add('commercial'); 
+                }
 
-                const isAgotada = m.classList.contains('agotada');
-                const footerText = isAgotada ? "SOLD OUT" : `${type}  •  ${price}`;
+                if (isSport) {
+                    m.classList.remove('commercial');
+                    m.classList.add('sport');
+                }
 
                 m.innerHTML = `
                     <div class="custom-tooltip-wrapper">
                         <div class="tooltip-row">
-                            <div class="tooltip-cell"><span class="tooltip-label">Section</span><span class="tooltip-value">${section}</span></div>
-                            <div class="tooltip-cell"><span class="tooltip-label">Table</span><span class="tooltip-value">${tableNum}</span></div>
+                            <div class="tooltip-cell">
+                                <span class="tooltip-label">Category</span>
+                                <span class="tooltip-value">${catName}</span>
+                            </div>
+                            <div class="tooltip-cell">
+                                <span class="tooltip-label">Zone</span>
+                                <span class="tooltip-value">${zoneName}</span>
+                            </div>
+                            <div class="tooltip-cell">
+                                <span class="tooltip-label">Table</span>
+                                <span class="tooltip-value">${tableNum}</span>
+                            </div>
                         </div>
-                        <div class="tooltip-footer">${footerText}</div>
+                        <div class="tooltip-footer">${type}  •  ${price}</div>
                     </div>`;
             });
-            fit();
-        } catch (e) { console.error("Error:", e); }
+            
+            await sincronizarConExcel();
+            document.getElementById('loupe-inner').innerHTML = document.getElementById('container').innerHTML;
+
+        } catch (e) { console.error("Error cargando mesas:", e); }
     }
 
     async function sincronizarConExcel() {
         try {
-            const urlFinal = URL_CSV + (URL_CSV.includes('?') ? '&' : '?') + 'cache_ignore=' + Date.now();
+            const urlFinal = URL_CSV + '&cache_ignore=' + Date.now();
             const respuesta = await fetch(urlFinal, { method: 'GET', mode: 'cors', cache: 'no-cache' });
-            const texto = await respuesta.text();
-            const filas = texto.split(/\r?\n/);
+            const filas = (await respuesta.text()).split(/\r?\n/);
 
             filas.forEach((fila, index) => {
                 if (index === 0 || !fila.trim()) return;
-                const columnas = fila.split(/,(?=(?:(?:[^"]*"){2})*[^"]*$)/);
-                if (columnas.length >= 3) {
-                    const estado = columnas[1].replace(/["']/g, "").trim().toUpperCase(); 
-                    const idMesa = columnas[2].replace(/["']/g, "").trim(); 
-                    const mesaDiv = document.querySelector(`[data-info="${idMesa}"]`);
+                const col = fila.split(/,(?=(?:(?:[^"]*"){2})*[^"]*$)/);
+                if (col.length >= 3) {
+                    const estado = col[1].replace(/["']/g, "").trim().toUpperCase(); 
+                    const idMesa = col[2].replace(/["']/g, "").trim(); 
+                    const mesaDiv = diccionarioMesas.get(idMesa);
+                    
                     if (mesaDiv) {
-                        if (estado === "VENDIDA") mesaDiv.classList.add('agotada');
-                        else mesaDiv.classList.remove('agotada');
+                        if (estado.includes("VENDIDA") || estado.includes("SOLD")) {
+                            mesaDiv.classList.add('agotada');
+                            mesaDiv.querySelector('.tooltip-footer').innerText = "SOLD OUT";
+                        } else {
+                            mesaDiv.classList.remove('agotada');
+                        }
                     }
                 }
             });
-        } catch (err) { console.error("Error:", err); }
+            document.getElementById('loupe-inner').innerHTML = document.getElementById('container').innerHTML;
+        } catch (err) { console.error("Error sincronizando:", err); }
     }
 
-    function zoom(f) { 
-        let newScale = scale * f;
-        // Límite 0.01 necesario para móviles
-        if (newScale >= 0.01 && newScale <= 0.8) {
-            scale = newScale;
-            container.style.transform = `scale(${scale})`; 
+    // ==========================================
+    // MOTOR DE TRIPLE ZOOM & NAVEGACIÓN
+    // ==========================================
+    const container = document.getElementById('container');
+    const mapImg = document.getElementById('map-img');
+    
+    let currentZoomState = 0; 
+    let baseScale = 1; 
+    let currentScale = 1;
+    
+    let currentX = 0, currentY = 0;
+    let isDragging = false;
+    let startX, startY, initialX, initialY;
+
+    function initMapPosition() {
+        if(mapImg.naturalWidth === 0) {
+            setTimeout(initMapPosition, 100);
+            return;
+        }
+        
+        baseScale = window.innerWidth / mapImg.naturalWidth;
+        if (baseScale > 1) baseScale = 1;
+
+        setZoomState(0, null, null, true); 
+    }
+
+    window.onload = () => {
+        if(mapImg.complete) initMapPosition();
+        else mapImg.onload = initMapPosition;
+        cargarMesas();
+    };
+
+    window.addEventListener('resize', () => {
+        if(currentZoomState === 0) initMapPosition();
+    });
+
+    function setZoomState(state, clickClientX = null, clickClientY = null, instant = false) {
+        currentZoomState = state;
+        
+        // Multiplicadores ajustados para el tamaño colosal del Hall 1
+        let zoomMultiplier = 1;
+        if (state === 1) zoomMultiplier = window.innerWidth < 768 ? 4.5 : 3.0;
+        if (state === 2) zoomMultiplier = window.innerWidth < 768 ? 8.0 : 7.0;
+
+        let newScale = baseScale * zoomMultiplier;
+
+        document.documentElement.style.setProperty('--map-scale', newScale);
+
+        document.querySelectorAll('.zoom-btn').forEach((btn, idx) => {
+            btn.classList.toggle('active', idx === state);
+        });
+        document.body.className = 'is-state-' + state;
+
+        container.style.transition = instant ? 'none' : 'transform 0.4s cubic-bezier(0.25, 1, 0.5, 1)';
+
+        if (state === 0) {
+            currentScale = baseScale;
+            currentX = 0;
+            currentY = Math.max(0, (window.innerHeight - (mapImg.naturalHeight * baseScale)) / 2);
+            container.style.transform = `translate(${currentX}px, ${currentY}px) scale(${currentScale})`;
+            
+            document.getElementById('side-menu').classList.remove('visible');
+            
+            document.querySelectorAll('.custom-tooltip-wrapper').forEach(t => {
+                t.style.opacity = '0'; t.style.pointerEvents = 'none';
+                setTimeout(() => { t.style.opacity = ''; t.style.pointerEvents = ''; }, 300);
+            });
+        } else {
+            document.getElementById('side-menu').classList.add('visible');
+            
+            if (clickClientX !== null && clickClientY !== null) {
+                const mapUnscaledX = (clickClientX - currentX) / currentScale;
+                const mapUnscaledY = (clickClientY - currentY) / currentScale;
+
+                const centerX = window.innerWidth / 2;
+                const centerY = window.innerHeight / 2;
+
+                currentX = centerX - (mapUnscaledX * newScale);
+                currentY = centerY - (mapUnscaledY * newScale);
+            } else {
+                const centerX = window.innerWidth / 2;
+                const centerY = window.innerHeight / 2;
+                const mapUnscaledX = (centerX - currentX) / currentScale;
+                const mapUnscaledY = (centerY - currentY) / currentScale;
+                
+                currentX = centerX - (mapUnscaledX * newScale);
+                currentY = centerY - (mapUnscaledY * newScale);
+            }
+            
+            currentScale = newScale;
+            container.style.transform = `translate(${currentX}px, ${currentY}px) scale(${currentScale})`;
         }
     }
 
-    function move(dir) {
-        const step = 400;
-        if(dir === 'up') viewport.scrollTop -= step;
-        if(dir === 'down') viewport.scrollTop += step;
-        if(dir === 'left') viewport.scrollLeft -= step;
-        if(dir === 'right') viewport.scrollLeft += step;
+    container.addEventListener('click', (e) => {
+        if (isDragging) return; 
+        document.getElementById('loupe').classList.remove('visible');
+
+        let nextState = currentZoomState + 1;
+        if (nextState > 2) nextState = 0; 
+
+        setZoomState(nextState, e.clientX, e.clientY);
+    });
+
+    window.setZoomStateUI = function(state, event) {
+        if (event) event.stopPropagation(); 
+        document.getElementById('loupe').classList.remove('visible');
+        setZoomState(state, null, null);
+    };
+
+    function startDrag(clientX, clientY) {
+        if (currentZoomState === 0) return; 
+        isDragging = true;
+        startX = clientX;
+        startY = clientY;
+        initialX = currentX;
+        initialY = currentY;
+        container.style.transition = 'none'; 
     }
 
-    function fit() { 
-        scale = (window.innerWidth / 10169) * 0.9; 
-        if(scale < 0.01) scale = 0.01;
-        container.style.transform = `scale(${scale})`;
-        viewport.scrollTo(0,0);
+    function doDrag(clientX, clientY) {
+        if (!isDragging) return;
+        currentX = initialX + (clientX - startX);
+        currentY = initialY + (clientY - startY);
+        container.style.transform = `translate(${currentX}px, ${currentY}px) scale(${currentScale})`;
     }
 
-    window.onload = cargarMesas;
-    window.onresize = fit;
-    setInterval(sincronizarConExcel, 120000);
+    function endDrag() {
+        if (!isDragging) return;
+        setTimeout(() => isDragging = false, 50); 
+        container.style.transition = 'transform 0.4s cubic-bezier(0.25, 1, 0.5, 1)'; 
+    }
+
+    container.addEventListener('mousedown', (e) => startDrag(e.clientX, e.clientY));
+    window.addEventListener('mousemove', (e) => doDrag(e.clientX, e.clientY));
+    window.addEventListener('mouseup', endDrag);
+    window.addEventListener('mouseleave', endDrag);
+
+    container.addEventListener('touchstart', (e) => startDrag(e.touches[0].clientX, e.touches[0].clientY));
+    window.addEventListener('touchmove', (e) => {
+        if (currentZoomState > 0) e.preventDefault(); 
+        doDrag(e.touches[0].clientX, e.touches[0].clientY);
+    }, { passive: false });
+    window.addEventListener('touchend', endDrag);
+
+    // ==========================================
+    // LA LUPA MÁGICA
+    // ==========================================
+    const loupe = document.getElementById('loupe');
+    const loupeInner = document.getElementById('loupe-inner');
+    const loupeSize = 260; 
+    const loupeMultiplier = 2.0; // Un pelín más de zoom porque el Hall 1 es enano de base
+    
+    window.addEventListener('pointermove', (e) => {
+        if (window.innerWidth < 768 || e.pointerType === 'touch' || currentZoomState > 0 || isDragging) {
+            loupe.classList.remove('visible');
+            return;
+        }
+
+        const rect = container.getBoundingClientRect();
+        
+        if (e.clientX < rect.left || e.clientX > rect.right || e.clientY < rect.top || e.clientY > rect.bottom) {
+            loupe.classList.remove('visible');
+            return;
+        }
+
+        loupe.classList.add('visible');
+        loupe.style.transform = `translate(${e.clientX - loupeSize / 2}px, ${e.clientY - loupeSize / 2}px)`;
+
+        loupeInner.style.width = mapImg.naturalWidth + 'px';
+        loupeInner.style.height = mapImg.naturalHeight + 'px';
+
+        const targetZoom = baseScale * loupeMultiplier;
+
+        const mapUnscaledX = (e.clientX - currentX) / baseScale;
+        const mapUnscaledY = (e.clientY - currentY) / baseScale;
+
+        const tx = (loupeSize / 2) - (mapUnscaledX * targetZoom);
+        const ty = (loupeSize / 2) - (mapUnscaledY * targetZoom);
+
+        loupeInner.style.transform = `translate(${tx}px, ${ty}px) scale(${targetZoom})`;
+    });
+
+    setInterval(sincronizarConExcel, 120000); 
+
 </script>
 </body>
 </html>
