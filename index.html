@@ -9,7 +9,7 @@
     :root {
         --verde-base: #2ecc71;
         --verde-deep: #27ae60;
-        --verde-sport: #00ffb4; /* Color especial para Sport Cards */
+        --verde-sport: #00ffb4;
         --rojo-sold: #e74c3c;
         --text-gray: #95a5a6;
         --fuente: 'Inter', sans-serif;
@@ -23,6 +23,7 @@
         position: relative; overflow: hidden;
     }
 
+    /* EL MAPA */
     #container { 
         position: absolute; 
         top: 0; left: 0;
@@ -33,7 +34,13 @@
         display: inline-block;
     }
 
+    /* Forzamos que la imagen dicte el tamaño real */
     #map-img { display: block; image-rendering: high-quality; max-width: none; user-select: none; -webkit-user-drag: none; }
+
+    /* CAPA DE MESAS: Obligamos a que se superponga exactamente al 100% de la imagen */
+    #capa-mesas {
+        position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none;
+    }
 
     body.is-state-1 #container, body.is-state-2 #container { cursor: grab; }
     body.is-state-1 #container:active, body.is-state-2 #container:active { cursor: grabbing; }
@@ -62,7 +69,7 @@
     body.is-state-1 .mesa.sport:hover, body.is-state-2 .mesa.sport:hover { background: rgba(0, 255, 180, 0.7); }
     body.is-state-1 .mesa.commercial:hover, body.is-state-2 .mesa.commercial:hover { background: rgba(52, 152, 219, 0.7); }
 
-    /* --- TOOLTIPS (3 COLUMNAS) --- */
+    /* --- TOOLTIPS --- */
     .custom-tooltip-wrapper {
         position: absolute; bottom: 150%; left: 50%;
         transform: translateX(-50%) translateY(10px) scale(calc(1 / var(--map-scale)));
@@ -88,18 +95,18 @@
     .tooltip-value { font-size: 15px; font-weight: 800; color: #1f2937; text-align: center; line-height: 1.1;}
     
     .tooltip-footer { padding: 14px; font-size: 15px; font-weight: 800; color: white; background: var(--verde-deep); text-align: center; }
-    .mesa.agotada .tooltip-footer { background: var(--rojo-sold); }
-    .mesa.sport .tooltip-footer { background: #00b894; } /* Verde sport un poco más legible en texto */
+    
+    /* PRIORIDAD ABSOLUTA AL ROJO SOLD OUT */
+    .mesa.agotada .tooltip-footer { background: var(--rojo-sold) !important; color: white !important; }
+    
+    .mesa.sport .tooltip-footer { background: #00b894; } 
     .mesa.commercial .tooltip-footer { background: #3498db; }
 
     /* --- MENÚ LATERAL (BACK) --- */
     #side-menu {
-        position: fixed; 
-        right: -150px; 
-        bottom: 100px; 
+        position: fixed; right: -150px; bottom: 100px; 
         transition: right 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275); 
-        z-index: 20000;
-        display: flex; flex-direction: column; gap: 10px;
+        z-index: 20000; display: flex; flex-direction: column; gap: 10px;
     }
     #side-menu.visible { right: 30px; } 
 
@@ -109,16 +116,12 @@
         box-shadow: 0 10px 25px rgba(0,0,0,0.15); cursor: pointer;
         display: flex; align-items: center; justify-content: center; gap: 8px; transition: all 0.2s;
     }
-    .btn-back:hover { 
-        transform: scale(1.05); background: #f8fafc; color: var(--verde-deep); 
-    }
+    .btn-back:hover { transform: scale(1.05); background: #f8fafc; color: var(--verde-deep); }
 
-    /* --- SELECTOR RÁPIDO DE ZOOM (UI FLOTANTE) --- */
+    /* --- SELECTOR RÁPIDO DE ZOOM --- */
     #zoom-ui {
-        position: fixed; bottom: 30px; right: 30px;
-        background: white; padding: 6px; border-radius: 50px;
-        box-shadow: 0 10px 30px rgba(0,0,0,0.15); z-index: 20000;
-        display: flex; gap: 5px;
+        position: fixed; bottom: 30px; right: 30px; background: white; padding: 6px; border-radius: 50px;
+        box-shadow: 0 10px 30px rgba(0,0,0,0.15); z-index: 20000; display: flex; gap: 5px;
     }
     .zoom-btn {
         width: 45px; height: 45px; border-radius: 50%; border: none;
@@ -128,13 +131,12 @@
     .zoom-btn:hover { background: #f1f5f9; color: #1f2937; }
     .zoom-btn.active { background: #1f2937; color: white; box-shadow: 0 4px 10px rgba(0,0,0,0.2); }
 
-    /* --- LA LUPA MÁGICA --- */
+    /* --- LUPA --- */
     #loupe {
         position: fixed; width: 260px; height: 260px; border-radius: 50%;
         border: 4px solid white; box-shadow: 0 15px 35px rgba(0,0,0,0.4), inset 0 0 15px rgba(0,0,0,0.2);
         pointer-events: none; overflow: hidden; z-index: 15000; 
-        opacity: 0; display: none; background: #fff;
-        left: 0; top: 0; will-change: transform;
+        opacity: 0; display: none; background: #fff; left: 0; top: 0; will-change: transform;
     }
     #loupe.visible { opacity: 1; display: block; }
     #loupe-inner { position: absolute; transform-origin: 0 0; pointer-events: none; will-change: transform; }
@@ -199,7 +201,6 @@
                 let zoneName = parts.length >= 2 ? parts[1] : "-";
                 let tableNum = parts.length >= 3 ? parts[2] : (parts[1] || "0"); 
 
-                // Nomenclatura específica del Hall 1
                 if(catName === "SPORT CARDS") catName = "Sport Cards";
                 if(catName === "TCG") catName = "TCG";
                 if(catName === "CORNER") catName = "Corner Table";
@@ -316,7 +317,6 @@
     function setZoomState(state, clickClientX = null, clickClientY = null, instant = false) {
         currentZoomState = state;
         
-        // Multiplicadores ajustados para el tamaño colosal del Hall 1
         let zoomMultiplier = 1;
         if (state === 1) zoomMultiplier = window.innerWidth < 768 ? 4.5 : 3.0;
         if (state === 2) zoomMultiplier = window.innerWidth < 768 ? 8.0 : 7.0;
@@ -428,7 +428,7 @@
     const loupe = document.getElementById('loupe');
     const loupeInner = document.getElementById('loupe-inner');
     const loupeSize = 260; 
-    const loupeMultiplier = 2.0; // Un pelín más de zoom porque el Hall 1 es enano de base
+    const loupeMultiplier = 2.0; 
     
     window.addEventListener('pointermove', (e) => {
         if (window.innerWidth < 768 || e.pointerType === 'touch' || currentZoomState > 0 || isDragging) {
