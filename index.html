@@ -318,8 +318,10 @@
         currentZoomState = state;
         
         let zoomMultiplier = 1;
-        if (state === 1) zoomMultiplier = window.innerWidth < 768 ? 4.5 : 3.0;
-        if (state === 2) zoomMultiplier = window.innerWidth < 768 ? 8.0 : 7.0;
+        
+        // --- ZOOM MÓVIL REBAJADO ---
+        if (state === 1) zoomMultiplier = window.innerWidth < 768 ? 3.0 : 3.0;
+        if (state === 2) zoomMultiplier = window.innerWidth < 768 ? 7.0 : 7.0;
 
         let newScale = baseScale * zoomMultiplier;
 
