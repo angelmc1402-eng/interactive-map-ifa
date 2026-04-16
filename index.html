@@ -32,8 +32,6 @@
         cursor: crosshair; 
         touch-action: none; 
         display: inline-block;
-        padding-bottom: 300px; /* AIRE POR ABAJO PARA QUE NO SE CORTE */
-        padding-right: 150px;  /* AIRE POR LA DERECHA */
     }
 
     /* Forzamos que la imagen dicte el tamaño real */
@@ -320,6 +318,8 @@
         currentZoomState = state;
         
         let zoomMultiplier = 1;
+        
+        // --- ZOOM MÓVIL REBAJADO ---
         if (state === 1) zoomMultiplier = window.innerWidth < 768 ? 3.0 : 3.0;
         if (state === 2) zoomMultiplier = window.innerWidth < 768 ? 7.0 : 7.0;
 
